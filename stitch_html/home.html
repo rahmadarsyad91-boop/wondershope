@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Wonder Shope | Premium Electronics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&amp;family=Inter:wght@400;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Outfit:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card:hover {
+            border-color: rgba(172, 199, 255, 0.3);
+            box-shadow: 0 0 40px rgba(172, 199, 255, 0.1);
+        }
+        .hero-glow {
+            background: radial-gradient(circle at 50% 50%, rgba(80, 143, 248, 0.15) 0%, transparent 70%);
+        }
+        .product-image-container img {
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .product-card:hover .product-image-container img {
+            transform: translateY(-12px) scale(1.05);
+        }
+        body {
+            background-color: #101415;
+            color: #e0e3e5;
+            overflow-x: hidden;
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-highest": "#323537",
+                    "surface-container-high": "#272a2c",
+                    "on-primary-container": "#00285b",
+                    "secondary-fixed": "#63f7ff",
+                    "inverse-primary": "#005bbf",
+                    "on-error": "#690005",
+                    "surface-tint": "#acc7ff",
+                    "outline": "#8c909e",
+                    "on-background": "#e0e3e5",
+                    "surface-container-lowest": "#0b0f10",
+                    "tertiary-container": "#8c90a4",
+                    "on-secondary-container": "#006c71",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "tertiary": "#c2c6db",
+                    "surface": "#101415",
+                    "surface-bright": "#363a3b",
+                    "secondary-container": "#00f4fe",
+                    "tertiary-fixed": "#dee1f7",
+                    "on-error-container": "#ffdad6",
+                    "outline-variant": "#424753",
+                    "on-secondary-fixed": "#002021",
+                    "background": "#101415",
+                    "surface-dim": "#101415",
+                    "on-primary": "#002f68",
+                    "surface-container": "#1d2022",
+                    "primary-fixed-dim": "#acc7ff",
+                    "secondary-fixed-dim": "#00dce5",
+                    "surface-variant": "#323537",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-surface-variant": "#c2c6d5",
+                    "secondary": "#e6feff",
+                    "on-surface": "#e0e3e5",
+                    "inverse-on-surface": "#2d3133",
+                    "on-primary-fixed": "#001a40",
+                    "on-secondary": "#003739",
+                    "error-container": "#93000a",
+                    "on-primary-fixed-variant": "#004492",
+                    "on-secondary-fixed-variant": "#004f53",
+                    "primary": "#acc7ff",
+                    "surface-container-low": "#191c1e",
+                    "on-tertiary-container": "#242939",
+                    "tertiary-fixed-dim": "#c2c6db",
+                    "primary-container": "#508ff8",
+                    "inverse-surface": "#e0e3e5",
+                    "error": "#ffb4ab",
+                    "on-tertiary": "#2b3040",
+                    "primary-fixed": "#d7e2ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "8px",
+                    "container-max": "1440px",
+                    "margin-mobile": "20px",
+                    "gutter": "24px",
+                    "margin-desktop": "80px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "display-xl": ["Outfit"],
+                    "headline-lg-mobile": ["Outfit"],
+                    "headline-md": ["Outfit"],
+                    "label-md": ["Inter"],
+                    "headline-lg": ["Outfit"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-xl": ["64px", {"lineHeight": "72px", "letterSpacing": "-0.02em", "fontWeight": "900"}],
+                    "headline-lg-mobile": ["32px", {"lineHeight": "40px", "fontWeight": "800"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.01em", "fontWeight": "800"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="font-body-md text-on-surface selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl dark:bg-surface/80 border-b border-white/10 shadow-[0_0_40px_rgba(172,199,255,0.15)] flex items-center justify-between px-8 md:px-margin-desktop py-4 w-full">
+<div class="flex items-center gap-8">
+<span class="font-display-xl text-headline-md bg-gradient-to-r from-primary-container to-secondary-container bg-clip-text text-transparent">Wonder Shope</span>
+<nav class="hidden md:flex items-center gap-6">
+<a class="font-label-md text-label-md text-primary border-b-2 border-primary pb-1 transition-all" href="#">Home</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">Catalog</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">New Arrivals</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center bg-surface-container-highest/50 rounded-full px-4 py-2 border border-white/10 focus-within:border-primary/50 transition-all">
+<span class="material-symbols-outlined text-on-surface-variant mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-label-md text-on-surface placeholder:text-on-surface-variant/50 w-48" placeholder="Search gadgets..." type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full hover:bg-white/5 transition-all duration-300 active:scale-95">
+<span class="material-symbols-outlined text-primary">shopping_cart</span>
+</button>
+<button class="p-2 rounded-full hover:bg-white/5 transition-all duration-300 active:scale-95">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+</button>
+<button class="p-2 rounded-full hover:bg-white/5 transition-all duration-300 active:scale-95">
+<span class="material-symbols-outlined text-primary">logout</span>
+</button>
+</div>
+</div>
+</header>
+<main class="pt-20">
+<!-- Hero Section -->
+<section class="relative min-h-[716px] flex items-center overflow-hidden px-8 md:px-margin-desktop py-20">
+
+<div class="absolute inset-0 hero-glow"></div>
+<div class="relative z-10 max-w-4xl">
+<span class="inline-block px-4 py-1.5 mb-6 rounded-full glass-card text-primary font-label-md text-label-md border-primary/20">NEXT-GEN ELECTRONICS</span>
+<h1 class="font-display-xl text-headline-lg md:text-display-xl mb-6 leading-tight">
+                    Temukan <span class="bg-gradient-to-r from-primary to-secondary-fixed-dim bg-clip-text text-transparent">Gadget Impianmu</span> di Masa Depan
+                </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-2xl">
+                    Experience the synergy of high-performance technology and futuristic design. Curated premium electronics for the modern visionary.
+                </p>
+<div class="flex flex-wrap gap-4">
+<button class="px-8 py-4 rounded-xl bg-gradient-to-r from-primary-container to-secondary-container text-on-primary-container font-label-md text-label-md font-bold shadow-[0_0_25px_rgba(80,143,248,0.4)] hover:shadow-[0_0_40px_rgba(80,143,248,0.6)] hover:scale-105 active:scale-95 transition-all">
+                        Belanja Sekarang
+                    </button>
+<button class="px-8 py-4 rounded-xl glass-card font-label-md text-label-md hover:bg-white/10 transition-all active:scale-95">
+                        Lihat Koleksi
+                    </button>
+</div>
+</div>
+<!-- Floating Product Silhouette (Decorative) -->
+<div class="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-1/3 h-full opacity-40">
+<div class="w-full h-full bg-contain bg-center bg-no-repeat" data-alt="A high-end cinematic studio shot of a futuristic sleek laptop with glowing blue neon highlights, floating in a dark atmospheric space filled with subtle particle effects and volumetric lighting. The aesthetic is cyber-premium with deep blue and black tones." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBSSXTUgtsgojLqBu_GIOwmz3Io8cCQdE8-UDSBJ3VojWhmGgtqQV6h0hfq68Urfdris7V-bt2wTYu8Oed1Qjm8LqXV9dW89cXH7ntxZ3Bb5tDNgyyjTLAUm-7y3_XPDEagYbQZmVkEkau2I51YeUP4yAp0jm6vRTMTrr352_AZxO9I1urcnCuvj23fGjdG_ex3j0vRDoPeJTIPKZ6A1OmK9faxj_kaEcx3TDV5pdHyCCUEkOHGD4j9fVrAbPoRfXObaU9zYsKzDrh9')"></div>
+</div>
+</section>
+<!-- Catalog Filter/Search (Contextual) -->
+<section class="px-8 md:px-margin-desktop py-8 border-y border-white/5 bg-surface-container-low/50 backdrop-blur-md">
+<div class="flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="flex gap-4 overflow-x-auto pb-2 w-full md:w-auto scrollbar-hide">
+<button class="px-6 py-2 rounded-full glass-card text-primary font-label-md text-label-md whitespace-nowrap border-primary/40">Semua Gadget</button>
+<button class="px-6 py-2 rounded-full glass-card text-on-surface-variant hover:text-on-surface font-label-md text-label-md whitespace-nowrap">Smartphones</button>
+<button class="px-6 py-2 rounded-full glass-card text-on-surface-variant hover:text-on-surface font-label-md text-label-md whitespace-nowrap">Laptops</button>
+<button class="px-6 py-2 rounded-full glass-card text-on-surface-variant hover:text-on-surface font-label-md text-label-md whitespace-nowrap">Audio Gear</button>
+</div>
+<div class="text-on-surface-variant font-label-md text-label-md">
+                    Menampilkan <span class="text-primary">24 Gadget</span> Terbaik
+                </div>
+</div>
+</section>
+<!-- Product Grid -->
+<section class="px-8 md:px-margin-desktop py-20">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Product Card 1 -->
+<div class="product-card glass-card rounded-2xl p-6 flex flex-col group transition-all duration-500">
+<div class="product-image-container relative h-48 mb-6 flex items-center justify-center">
+<img class="h-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" data-alt="Professional studio photograph of a premium silver smartphone with a multi-lens camera system, reflecting sharp highlights in a dark environment. The lighting is cold and technical, emphasizing the high-end metal finish and glass screen. Cyber-premium aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZjGwy-3PiP6XAqe9sTXsEzFW_rnvKa5dvYUHBR1ML3zu2GVYuldGDSGGbzehpB7EGTOdXv3AqhCQ8-cbwVcWVkMnWmfuGv628bI5V0wJbRhn0cMabylB6YK8RNWy7LXX33lySq8bfATJ8mL6px_E8krCn09oEsw3tbPweksOzhGdDN6fHMBVh8zz1tNSrSunUSM7kiws-DmRWG34zmJFzKb4ZgJQtG4EZNv_xDYsqIFTnSZK3ASuB2j_XLJO5JODNDobxZmbomGZu"/>
+<span class="absolute top-0 right-0 px-3 py-1 rounded-full bg-secondary-container/20 text-secondary-fixed-dim text-[10px] font-bold tracking-widest uppercase">Premium</span>
+</div>
+<div class="flex-grow">
+<p class="text-[10px] font-bold text-on-surface-variant tracking-[0.2em] mb-1">X-SERIES</p>
+<h3 class="font-headline-md text-headline-md mb-2 group-hover:text-primary transition-colors">Nova Phone Ultra</h3>
+<p class="font-body-md text-primary font-bold text-lg mb-6">Rp 18.499.000</p>
+</div>
+<button class="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-primary-container hover:text-on-primary-container hover:border-transparent transition-all duration-300 font-label-md text-label-md active:scale-95">
+                        Lihat Detail
+                    </button>
+</div>
+<!-- Product Card 2 -->
+<div class="product-card glass-card rounded-2xl p-6 flex flex-col group transition-all duration-500">
+<div class="product-image-container relative h-48 mb-6 flex items-center justify-center">
+<img class="h-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" data-alt="High-detail shot of a pair of professional over-ear headphones with matte black texture and glowing cyan LED indicators. The product is angled to show ergonomic design and luxury padding. Ambient blue lighting over a deep black background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCD_DfhPhDg_1Y73birIOkBpaLeIdYajpo__T9COvwjy89_WPjt7rj70bx5wcbsAs68W5ASpaTARglricG11YpO8Rmwxlb2EiDm61_8PP_uzNz71Z8G17YS9FDSl8ySsiDKMED_ceQUmEnOppaiIVIAgZX9fVEWATy-O5ELNBGn5u6DgZE23I9muoj57BZZTS-nnUzkoCFKJb82DJnvchS3MxJ9Y1yggD80sFKw95Nn4zhLZ_dv_hhG6gB1-ytnRp8els6-SXYMxWO3"/>
+<span class="absolute top-0 right-0 px-3 py-1 rounded-full bg-primary-container/20 text-primary text-[10px] font-bold tracking-widest uppercase">Top Seller</span>
+</div>
+<div class="flex-grow">
+<p class="text-[10px] font-bold text-on-surface-variant tracking-[0.2em] mb-1">SONIC WAVE</p>
+<h3 class="font-headline-md text-headline-md mb-2 group-hover:text-primary transition-colors">Quantum Buds Pro</h3>
+<p class="font-body-md text-primary font-bold text-lg mb-6">Rp 3.200.000</p>
+</div>
+<button class="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-primary-container hover:text-on-primary-container hover:border-transparent transition-all duration-300 font-label-md text-label-md active:scale-95">
+                        Lihat Detail
+                    </button>
+</div>
+<!-- Product Card 3 -->
+<div class="product-card glass-card rounded-2xl p-6 flex flex-col group transition-all duration-500">
+<div class="product-image-container relative h-48 mb-6 flex items-center justify-center">
+<img class="h-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" data-alt="A slim, ultra-modern gaming laptop with an illuminated mechanical keyboard and a vibrant colorful screen. The chassis is titanium grey with sharp edges. Atmospheric cinematic lighting with smoke and lens flare, luxury hardware product photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiO_vGEtT9_tis5gXd0D4k_i2M276O9KdHVlP6pTPhKaocQKUZdZtD0tusfWAW0-foxpcRQZ28DkoMT_mtoE16AXEsbv_pbsdYs4L5H-_JRb5pc6zHbfXzY7CrPvF5TOfomjcrJzq4GGA_4-m3LAA13d7EdDwkQAoh1VM8nQlgF_xDuqC2SeG0vEw39kYPkeG61DpTk8Ks0KESsf3794fH1d0FF6ZDYtoBL_b2Q6TKQ3FhZW_aj_hWjQ23Mo22DM1nx97grV8INFHy"/>
+<span class="absolute top-0 right-0 px-3 py-1 rounded-full bg-error/10 text-error text-[10px] font-bold tracking-widest uppercase">Hot Deal</span>
+</div>
+<div class="flex-grow">
+<p class="text-[10px] font-bold text-on-surface-variant tracking-[0.2em] mb-1">STEALTH CORE</p>
+<h3 class="font-headline-md text-headline-md mb-2 group-hover:text-primary transition-colors">Vector Pro 16</h3>
+<p class="font-body-md text-primary font-bold text-lg mb-6">Rp 24.999.000</p>
+</div>
+<button class="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-primary-container hover:text-on-primary-container hover:border-transparent transition-all duration-300 font-label-md text-label-md active:scale-95">
+                        Lihat Detail
+                    </button>
+</div>
+<!-- Product Card 4 -->
+<div class="product-card glass-card rounded-2xl p-6 flex flex-col group transition-all duration-500">
+<div class="product-image-container relative h-48 mb-6 flex items-center justify-center">
+<img class="h-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" data-alt="Minimalist design of a square smart home control hub with a circular glowing light on top. The material is a mix of brushed aluminum and white ceramic. Clean, sharp, technical studio lighting on a dark reflective surface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAh_4rvSX6uhzZHZtXENlHEGvhzhboD76fYr92YUxJRITauFFrjBluHMsx0YmL8j8nkJQe2hMPAfT7fy494c6UFVnvS3REogD3A04o3dLYdj_GUP1PhbACQhcLMQuOZLwIEC6SGU81NTRbJAHTqLvnmU-qEgOa067sXGVfMxOxFdn5d3AF5KOS2TjQqDh48D2zo-qx9Vh4TPwy5neo_0ROZGs9IWnyVA39xiOLqzHEEvZ7i322FVRRNLSuHfq9SYwqWTkRhxQip2bO5"/>
+<span class="absolute top-0 right-0 px-3 py-1 rounded-full bg-tertiary-container/20 text-tertiary text-[10px] font-bold tracking-widest uppercase">New</span>
+</div>
+<div class="flex-grow">
+<p class="text-[10px] font-bold text-on-surface-variant tracking-[0.2em] mb-1">SMART HOME</p>
+<h3 class="font-headline-md text-headline-md mb-2 group-hover:text-primary transition-colors">Core Hub Nexus</h3>
+<p class="font-body-md text-primary font-bold text-lg mb-6">Rp 1.850.000</p>
+</div>
+<button class="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-primary-container hover:text-on-primary-container hover:border-transparent transition-all duration-300 font-label-md text-label-md active:scale-95">
+                        Lihat Detail
+                    </button>
+</div>
+<!-- Product Card 5 (Repeated Style) -->
+<div class="product-card glass-card rounded-2xl p-6 flex flex-col group transition-all duration-500">
+<div class="product-image-container relative h-48 mb-6 flex items-center justify-center">
+<img class="h-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" data-alt="A sleek black smartwatch with a vibrant circular display showing fitness metrics. High-contrast lighting highlights the metallic band and the curved glass of the watch face. Premium technical aesthetic for wearable electronics." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAs9HgXug8QkJ6_V23GBxi2On6gPQ-RVAWOymqBo9Du9X95G9wLvkPk7pZBzbNX1dl9U5PY7zM_fJiCd2EEBcnPWlSll82rS2wmFNGN6_HZzKRT5bqIvi2hV7sJUt9QQvoYHITgN5SUdu8BFQyjMdzMjKT1OXLobQPU95B53QhM5Ruj4wa1Vd7JlyTR2c_CE022RPgYirGuQrSfWcDsk8E9bBHsYy2qCHWm-iRz1DafV75WLka9AFjwGzbTYib9GwiNeXR8RgM5ZVEu"/>
+</div>
+<div class="flex-grow">
+<p class="text-[10px] font-bold text-on-surface-variant tracking-[0.2em] mb-1">TITAN WEAR</p>
+<h3 class="font-headline-md text-headline-md mb-2 group-hover:text-primary transition-colors">Pulse Chronos G3</h3>
+<p class="font-body-md text-primary font-bold text-lg mb-6">Rp 4.499.000</p>
+</div>
+<button class="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-primary-container hover:text-on-primary-container hover:border-transparent transition-all duration-300 font-label-md text-label-md active:scale-95">
+                        Lihat Detail
+                    </button>
+</div>
+<!-- Product Card 6 -->
+<div class="product-card glass-card rounded-2xl p-6 flex flex-col group transition-all duration-500">
+<div class="product-image-container relative h-48 mb-6 flex items-center justify-center">
+<img class="h-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" data-alt="Close-up of a high-resolution professional camera with a large glass lens reflecting blue light. The camera body is rugged and matte black. Extreme detail on dials and buttons. Premium gadget photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2cE31y5IL5WMmLd3Q1TY9vZHMlAlDTxnNKbeRIWpSHfOW9WGvwXkQO3zoZtoiJ9DwgtaD1AFbGHp3bOf_tn-ctAwf1-pClkqUdrz-jSKZk0Y-6O9dDoJW33Rd_K4MZwCmUXy_Q3UM3HG6uV2M1NLWFJjH21pm17CicH58Ug3d3jGfWR6CDjxjKsYmafx-ma5cA3QhdG3-Gb5SjRvSfS9_ZmzNmEvYbVzkr94tqz6EXBtN38xsRLAyPOD8bB4fBhTHNtDzIMvUc2TX"/>
+</div>
+<div class="flex-grow">
+<p class="text-[10px] font-bold text-on-surface-variant tracking-[0.2em] mb-1">OPTIX PRO</p>
+<h3 class="font-headline-md text-headline-md mb-2 group-hover:text-primary transition-colors">Lumix Alpha X</h3>
+<p class="font-body-md text-primary font-bold text-lg mb-6">Rp 12.900.000</p>
+</div>
+<button class="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-primary-container hover:text-on-primary-container hover:border-transparent transition-all duration-300 font-label-md text-label-md active:scale-95">
+                        Lihat Detail
+                    </button>
+</div>
+</div>
+</section>
+<!-- Newsletter CTA -->
+<section class="px-8 md:px-margin-desktop py-20">
+<div class="glass-card rounded-[2rem] p-12 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 border-primary/20">
+<div class="absolute -right-20 -bottom-20 w-80 h-80 bg-primary/10 blur-[100px] rounded-full"></div>
+<div class="relative z-10 max-w-xl text-center md:text-left">
+<h2 class="font-headline-lg text-headline-lg mb-4">Dapatkan Update Eksklusif</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Jadilah yang pertama mengetahui rilis gadget terbaru dan penawaran terbatas khusus untuk member Wonder Shope.</p>
+</div>
+<div class="relative z-10 flex w-full md:w-auto items-stretch gap-2">
+<input class="bg-surface-container-low border border-white/10 rounded-xl px-6 py-4 focus:ring-2 focus:ring-primary focus:border-transparent text-label-md w-full md:w-80 transition-all" placeholder="Email Anda" type="email"/>
+<button class="px-8 py-4 rounded-xl bg-primary text-on-primary font-bold hover:brightness-110 active:scale-95 transition-all">Subscribe</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer Component -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest w-full mt-auto flex flex-col items-center gap-6 py-12 px-8 md:px-margin-desktop border-t border-outline-variant">
+<div class="w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+<div class="flex flex-col gap-2">
+<span class="font-display-xl text-headline-md text-on-surface">Wonder Shope</span>
+<p class="text-on-surface-variant font-label-md text-label-md max-w-xs">Premium Electronics for the Modern Lifestyle. Cutting-edge technology at your fingertips.</p>
+</div>
+<div class="flex flex-wrap gap-x-8 gap-y-4">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Terms of Service</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Contact Us</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">Shipping Info</a>
+</div>
+</div>
+<div class="w-full pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="font-body-md text-body-md text-on-surface-variant opacity-60">© 2024 Wonder Shope Premium Electronics. All rights reserved.</p>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer transition-colors">public</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer transition-colors">podcasts</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer transition-colors">share</span>
+</div>
+</div>
+</footer>
+<script>
+        // Simple micro-interaction for product cards
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+    </script>
+</body></html>

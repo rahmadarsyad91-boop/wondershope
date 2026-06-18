@@ -1,0 +1,3435 @@
+app/http/controllers/auth (gabungan semua controller auth )
+AuthenticatedSessionController.php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
+
+class AuthenticatedSessionController extends Controller
+{
+    /**
+     * Display the login view.
+     */
+    public function create(): View
+    {
+        return view('auth.login');
+    }
+
+    /**
+     * Handle an incoming authentication request.
+     */
+    public function store(LoginRequest $request): RedirectResponse
+    {
+        $request->authenticate();
+
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('home', absolute: false));
+    }
+
+    /**
+     * Destroy an authenticated session.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        return redirect('/');
+    }
+}
+
+
+confirmablepasswordcontroller.php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class ConfirmablePasswordController extends Controller
+{
+    /**
+     * Show the confirm password view.
+     */
+    public function show(): View
+    {
+        return view('auth.confirm-password');
+    }
+
+    /**
+     * Confirm the user's password.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        if (! Auth::guard('web')->validate([
+            'email' => $request->user()->email,
+            'password' => $request->password,
+        ])) {
+            throw ValidationException::withMessages([
+                'password' => __('auth.password'),
+            ]);
+        }
+
+        $request->session()->put('auth.password_confirmed_at', time());
+
+        return redirect()->intended(route('dashboard', absolute: false));
+    }
+}
+
+
+emailverificationnotificationcontroller.php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+
+class EmailVerificationNotificationController extends Controller
+{
+    /**
+     * Send a new email verification notification.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect()->intended(route('dashboard', absolute: false));
+        }
+
+        $request->user()->sendEmailVerificationNotification();
+
+        return back()->with('status', 'verification-link-sent');
+    }
+}
+
+
+
+emailverificationpromptcontroller.php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+class EmailVerificationPromptController extends Controller
+{
+    /**
+     * Display the email verification prompt.
+     */
+    public function __invoke(Request $request): RedirectResponse|View
+    {
+        return $request->user()->hasVerifiedEmail()
+                    ? redirect()->intended(route('dashboard', absolute: false))
+                    : view('auth.verify-email');
+    }
+}
+
+
+newpasswordcontroller.php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class NewPasswordController extends Controller
+{
+    /**
+     * Display the password reset view.
+     */
+    public function create(Request $request): View
+    {
+        return view('auth.reset-password', ['request' => $request]);
+    }
+
+    /**
+     * Handle an incoming new password request.
+     *
+     * @throws ValidationException
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'token' => ['required'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+
+        // Here we will attempt to reset the user's password. If it is successful we
+        // will update the password on an actual user model and persist it to the
+        // database. Otherwise we will parse the error and return the response.
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function (User $user) use ($request) {
+                $user->forceFill([
+                    'password' => Hash::make($request->password),
+                    'remember_token' => Str::random(60),
+                ])->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        // If the password was successfully reset, we will redirect the user back to
+        // the application's home authenticated view. If there is an error we can
+        // redirect them back to where they came from with their error message.
+        return $status == Password::PASSWORD_RESET
+                    ? redirect()->route('login')->with('status', __($status))
+                    : back()->withInput($request->only('email'))
+                        ->withErrors(['email' => __($status)]);
+    }
+}
+
+
+
+passwordcontroller.php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
+
+class PasswordController extends Controller
+{
+    /**
+     * Update the user's password.
+     */
+    public function update(Request $request): RedirectResponse
+    {
+        $validated = $request->validateWithBag('updatePassword', [
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', Password::defaults(), 'confirmed'],
+        ]);
+
+        $request->user()->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return back()->with('status', 'password-updated');
+    }
+}
+
+
+
+passwordresetlinkcontroller.php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class PasswordResetLinkController extends Controller
+{
+    /**
+     * Display the password reset link request view.
+     */
+    public function create(): View
+    {
+        return view('auth.forgot-password');
+    }
+
+    /**
+     * Handle an incoming password reset link request.
+     *
+     * @throws ValidationException
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        // We will send the password reset link to this user. Once we have attempted
+        // to send the link, we will examine the response then see the message we
+        // need to show to the user. Finally, we'll send out a proper response.
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        return $status == Password::RESET_LINK_SENT
+                    ? back()->with('status', __($status))
+                    : back()->withInput($request->only('email'))
+                        ->withErrors(['email' => __($status)]);
+    }
+}
+
+
+
+registeredusercontroller.php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class RegisteredUserController extends Controller
+{
+    /**
+     * Display the registration view.
+     */
+    public function create(): View
+    {
+        return view('auth.register');
+    }
+
+    /**
+     * Handle an incoming registration request.
+     *
+     * @throws ValidationException
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        event(new Registered($user));
+
+        Auth::login($user);
+
+        return redirect(route('home', absolute: false));
+    }
+}
+
+
+
+verifyemailcontroller.php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Auth\Events\Verified;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\RedirectResponse;
+
+class VerifyEmailController extends Controller
+{
+    /**
+     * Mark the authenticated user's email address as verified.
+     */
+    public function __invoke(EmailVerificationRequest $request): RedirectResponse
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+        }
+
+        if ($request->user()->markEmailAsVerified()) {
+            event(new Verified($request->user()));
+        }
+
+        return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+    }
+}
+
+
+admincontroller.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Product;
+use Illuminate\Http\Request;
+
+class AdminController extends Controller
+{
+    public function index()
+    {
+        // 1. Menghitung total produk aktif secara dinamis dari database
+        $totalProduk = Product::count();
+
+        // 2. Data Hasil Penjualan & Bisnis (Simulasi / Mock Data awal)
+        // Nantinya bisa Anda hubungkan dengan tabel transaksi/orders Anda
+        $totalTerjual = 142;          
+        $totalOmset = 27500000;       
+        $totalRetur = 3;              
+
+        // 3. Simulasi Data Riwayat Penjualan Terbaru untuk Tampilan Tabel
+        $riwayatPenjualan = [
+            [
+                'nota' => 'TRX-2026-001',
+                'customer' => 'Rahmad Arsyad',
+                'produk' => 'Wonder Phone X (Varian: 256GB)',
+                'total' => 12500000,
+                'status' => 'Selesai'
+            ],
+            [
+                'nota' => 'TRX-2026-002',
+                'customer' => 'Siti Aisyah',
+                'produk' => 'Wonder Buds Pro (Varian: Hitam)',
+                'total' => 1500000,
+                'status' => 'Selesai'
+            ],
+            [
+                'nota' => 'TRX-2026-003',
+                'customer' => 'Budi Utomo',
+                'produk' => 'Wonder Watch 4 (Varian: Sport)',
+                'total' => 3200000,
+                'status' => 'Retur Proses'
+            ],
+        ];
+
+        return view('admin.dashboard', compact(
+            'totalProduk', 
+            'totalTerjual', 
+            'totalOmset', 
+            'totalRetur', 
+            'riwayatPenjualan'
+        ));
+    }
+
+    /**
+     * ==========================================
+     * TAMBAHAN FITUR BARU AGAR TIDAK ERROR
+     * ==========================================
+     */
+
+    // Fungsi untuk menampilkan halaman Barang Terjual
+    public function barangTerjual()
+    {
+        return view('admin.terjual.index'); 
+    }
+
+    // Fungsi untuk menampilkan halaman Barang Retur
+    public function barangRetur()
+    {
+        return view('admin.retur.index');
+    }
+}
+
+
+cartcontroller.php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Product;
+use App\Models\ProductVariant;
+
+class CartController extends Controller
+{
+    // 1. Menampilkan Halaman Keranjang
+    public function index()
+    {
+        $cart = session()->get('cart', []);
+        return view('cart.index', compact('cart'));
+    }
+
+    // 2. Memasukkan Produk & Varian ke Keranjang
+    public function add(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required',
+            'variant_id' => 'required',
+            'quantity' => 'required|numeric|min:1'
+        ]);
+
+        $product = Product::findOrFail($request->product_id);
+        $variant = ProductVariant::findOrFail($request->variant_id);
+        
+        $cart = session()->get('cart', []);
+        $cartId = $request->product_id . '-' . $request->variant_id; // Unique ID gabungan produk & varian
+
+        // Jika produk dengan varian tersebut sudah ada di keranjang, tambahkan jumlahnya
+        if(isset($cart[$cartId])) {
+            $cart[$cartId]['quantity'] += $request->quantity;
+        } else {
+            // Jika belum ada, masukkan data baru
+            $cart[$cartId] = [
+                "name" => $product->name,
+                "brand" => $product->brand,
+                "variant_name" => $variant->nama_varian,
+                "quantity" => $request->quantity,
+                "price" => $product->base_price,
+                "slug" => $product->slug
+            ];
+        }
+
+        session()->put('cart', $cart);
+        return redirect()->route('cart.index')->with('success', 'Produk berhasil ditambahkan ke keranjang!');
+    }
+
+    // 3. Menghapus Item dari Keranjang
+    public function remove($id)
+    {
+        $cart = session()->get('cart', []);
+        if(isset($cart[$id])) {
+            unset($cart[$id]);
+            session()->put('cart', $cart);
+        }
+        return redirect()->route('cart.index')->with('success', 'Item berhasil dihapus!');
+    }
+}
+
+
+controller.php
+<?php
+
+namespace App\Http\Controllers;
+
+abstract class Controller
+{
+    //
+}
+
+
+productcontroller.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Product;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+
+class ProductController extends Controller
+{
+    // 1. Menampilkan Katalog Utama (Home)
+    public function index()
+    {
+        $products = Product::all();
+        return view('home', compact('products'));
+    }
+
+    // 2. Menampilkan Detail Produk
+    public function show($slug)
+    {
+        $product = Product::with('variants')->where('slug', $slug)->firstOrFail();
+        return view('products.show', compact('product'));
+    }
+
+    // 3. Menampilkan Form Tambah Produk
+    public function create()
+    {
+        return view('products.create');
+    }
+
+    // 4. Memproses Penyimpanan Data Produk Baru & Varian
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required',
+            'brand' => 'required',
+            'base_price' => 'required|numeric',
+            'description' => 'required',
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'variants' => 'required|array|min:1',
+            'variants.*.nama_varian' => 'required|string',
+            'variants.*.stok' => 'required|integer|min:0',
+        ]);
+
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->storeAs('products', $fileName, 'public');
+        }
+
+        $slug = Str::slug($request->name);
+
+        $product = Product::create([
+            'name' => $request->name,
+            'slug' => $slug,
+            'brand' => $request->brand,
+            'base_price' => $request->base_price,
+            'description' => $request->description,
+            'image' => $fileName,
+        ]);
+
+        foreach ($request->variants as $variantData) {
+            $product->variants()->create([
+                'nama_varian' => $variantData['nama_varian'],
+                'stok' => $variantData['stok'],
+            ]);
+        }
+
+        return redirect()->route('home')->with('success', 'Produk dan Varian berhasil ditambahkan!');
+    }
+
+    // 5. Menampilkan Tabel Kelola Produk (Admin)
+    public function adminIndex()
+    {
+        $products = Product::all();
+        return view('products.index', compact('products'));
+    }
+
+    // 6. Menampilkan Form Edit Produk & Varian
+    public function edit($id)
+    {
+        $product = Product::with('variants')->findOrFail($id);
+        return view('products.edit', compact('product'));
+    }
+
+    // 7. Memproses Perubahan Data Produk, Varian Lama, & Varian Baru (Dinamis)
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required',
+            'brand' => 'required',
+            'base_price' => 'required|numeric',
+            'description' => 'required',
+            'image' => 'sometimes|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'variants' => 'sometimes|array',
+            'new_variants' => 'sometimes|array',
+        ]);
+
+        $product = Product::findOrFail($id);
+        $fileName = $product->image;
+
+        if ($request->hasFile('image')) {
+            if ($product->image && Storage::disk('public')->exists('products/' . $product->image)) {
+                Storage::disk('public')->delete('products/' . $product->image);
+            }
+            $file = $request->file('image');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->storeAs('products', $fileName, 'public');
+        }
+
+        // Update data produk utama
+        $product->update([
+            'name' => $request->name,
+            'slug' => Str::slug($request->name),
+            'brand' => $request->brand,
+            'base_price' => $request->base_price,
+            'description' => $request->description,
+            'image' => $fileName,
+        ]);
+
+        // Jalur A: Update varian lama yang diubah nilainya
+        if ($request->has('variants')) {
+            foreach ($request->variants as $variantData) {
+                $product->variants()->where('id', $variantData['id'])->update([
+                    'nama_varian' => $variantData['nama_varian'],
+                    'stok' => $variantData['stok'],
+                ]);
+            }
+        }
+
+        // Jalur B: Menyimpan varian-varian tambahan baru hasil klik tombol JS
+        if ($request->has('new_variants')) {
+            foreach ($request->new_variants as $newVariantData) {
+                $product->variants()->create([
+                    'nama_varian' => $newVariantData['nama_varian'],
+                    'stok' => $newVariantData['stok'],
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.products.index')->with('success', 'Produk dan Varian berhasil diperbarui!');
+    }
+}
+
+
+profilecontroller.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ProfileUpdateRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\View\View;
+
+class ProfileController extends Controller
+{
+    /**
+     * Display the user's profile form.
+     */
+    public function edit(Request $request): View
+    {
+        return view('profile.edit', [
+            'user' => $request->user(),
+        ]);
+    }
+
+    /**
+     * Update the user's profile information.
+     */
+    public function update(ProfileUpdateRequest $request): RedirectResponse
+    {
+        $request->user()->fill($request->validated());
+
+        if ($request->user()->isDirty('email')) {
+            $request->user()->email_verified_at = null;
+        }
+
+        $request->user()->save();
+
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    /**
+     * Delete the user's account.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        $request->validateWithBag('userDeletion', [
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $user = $request->user();
+
+        Auth::logout();
+
+        $user->delete();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return Redirect::to('/');
+    }
+}
+
+
+
+middlewares
+adminmiddleware.php
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class AdminMiddleware
+{
+    /**
+     * Handle an incoming request.
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        // Cek apakah user sudah login dan kolom role-nya berisi 'admin'
+        if (auth()->check() && auth()->user()->role === 'admin') {
+            return $next($request);
+        }
+
+        // Jika bukan admin, kembalikan ke halaman utama
+        return redirect('/')->with('error', 'Akses ditolak! Anda bukan Admin.');
+    }
+}
+
+
+requests
+profileupdaterequest.php
+<?php
+
+namespace App\Http\Requests;
+
+use App\Models\User;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class ProfileUpdateRequest extends FormRequest
+{
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                Rule::unique(User::class)->ignore($this->user()->id),
+            ],
+        ];
+    }
+}
+
+auth
+LoginRequest.php
+<?php
+
+namespace App\Http\Requests\Auth;
+
+use Illuminate\Auth\Events\Lockout;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+class LoginRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ];
+    }
+
+    /**
+     * Attempt to authenticate the request's credentials.
+     *
+     * @throws ValidationException
+     */
+    public function authenticate(): void
+    {
+        $this->ensureIsNotRateLimited();
+
+        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => trans('auth.failed'),
+            ]);
+        }
+
+        RateLimiter::clear($this->throttleKey());
+    }
+
+    /**
+     * Ensure the login request is not rate limited.
+     *
+     * @throws ValidationException
+     */
+    public function ensureIsNotRateLimited(): void
+    {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+            return;
+        }
+
+        event(new Lockout($this));
+
+        $seconds = RateLimiter::availableIn($this->throttleKey());
+
+        throw ValidationException::withMessages([
+            'email' => trans('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => ceil($seconds / 60),
+            ]),
+        ]);
+    }
+
+    /**
+     * Get the rate limiting throttle key for the request.
+     */
+    public function throttleKey(): string
+    {
+        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+    }
+}
+
+
+
+models
+product.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Product extends Model
+{
+    protected $fillable = ['name', 'slug', 'brand', 'description', 'base_price', 'image'];
+
+public function variants()
+{
+    return $this->hasMany(ProductVariant::class);
+}
+}
+
+productvariant.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ProductVariant extends Model
+{
+    //
+    protected $fillable = ['nama_varian', 'stok'];
+}
+
+user.php
+<?php
+
+namespace App\Models;
+
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+class User extends Authenticatable
+{
+    use HasFactory, Notifiable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+}
+
+
+providers
+AuthServiceProvider.php
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        //
+    }
+}
+
+
+view components
+applayout.php
+<?php
+
+namespace App\View\Components;
+
+use Illuminate\View\Component;
+use Illuminate\View\View;
+
+class AppLayout extends Component
+{
+    /**
+     * Get the view / contents that represents the component.
+     */
+    public function render(): View
+    {
+        return view('layouts.app');
+    }
+}
+
+guestlayout.php
+<?php
+
+namespace App\View\Components;
+
+use Illuminate\View\Component;
+use Illuminate\View\View;
+
+class GuestLayout extends Component
+{
+    /**
+     * Get the view / contents that represents the component.
+     */
+    public function render(): View
+    {
+        return view('layouts.guest');
+    }
+}
+
+
+bootstrap/cache
+packages.php
+<?php return array (
+  'laravel/breeze' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Laravel\\Breeze\\BreezeServiceProvider',
+    ),
+  ),
+  'laravel/sail' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Laravel\\Sail\\SailServiceProvider',
+    ),
+  ),
+  'laravel/tinker' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Laravel\\Tinker\\TinkerServiceProvider',
+    ),
+  ),
+  'nesbot/carbon' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Carbon\\Laravel\\ServiceProvider',
+    ),
+  ),
+  'nunomaduro/collision' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
+    ),
+  ),
+  'nunomaduro/termwind' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Termwind\\Laravel\\TermwindServiceProvider',
+    ),
+  ),
+  'spatie/laravel-ignition' => 
+  array (
+    'aliases' => 
+    array (
+      'Flare' => 'Spatie\\LaravelIgnition\\Facades\\Flare',
+    ),
+    'providers' => 
+    array (
+      0 => 'Spatie\\LaravelIgnition\\IgnitionServiceProvider',
+    ),
+  ),
+);
+
+services.php
+<?php return array (
+  'providers' => 
+  array (
+    0 => 'Illuminate\\Auth\\AuthServiceProvider',
+    1 => 'Illuminate\\Broadcasting\\BroadcastServiceProvider',
+    2 => 'Illuminate\\Bus\\BusServiceProvider',
+    3 => 'Illuminate\\Cache\\CacheServiceProvider',
+    4 => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    5 => 'Illuminate\\Concurrency\\ConcurrencyServiceProvider',
+    6 => 'Illuminate\\Cookie\\CookieServiceProvider',
+    7 => 'Illuminate\\Database\\DatabaseServiceProvider',
+    8 => 'Illuminate\\Encryption\\EncryptionServiceProvider',
+    9 => 'Illuminate\\Filesystem\\FilesystemServiceProvider',
+    10 => 'Illuminate\\Foundation\\Providers\\FoundationServiceProvider',
+    11 => 'Illuminate\\Hashing\\HashServiceProvider',
+    12 => 'Illuminate\\Mail\\MailServiceProvider',
+    13 => 'Illuminate\\Notifications\\NotificationServiceProvider',
+    14 => 'Illuminate\\Pagination\\PaginationServiceProvider',
+    15 => 'Illuminate\\Auth\\Passwords\\PasswordResetServiceProvider',
+    16 => 'Illuminate\\Pipeline\\PipelineServiceProvider',
+    17 => 'Illuminate\\Queue\\QueueServiceProvider',
+    18 => 'Illuminate\\Redis\\RedisServiceProvider',
+    19 => 'Illuminate\\Session\\SessionServiceProvider',
+    20 => 'Illuminate\\Translation\\TranslationServiceProvider',
+    21 => 'Illuminate\\Validation\\ValidationServiceProvider',
+    22 => 'Illuminate\\View\\ViewServiceProvider',
+    23 => 'Laravel\\Breeze\\BreezeServiceProvider',
+    24 => 'Laravel\\Sail\\SailServiceProvider',
+    25 => 'Laravel\\Tinker\\TinkerServiceProvider',
+    26 => 'Carbon\\Laravel\\ServiceProvider',
+    27 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
+    28 => 'Termwind\\Laravel\\TermwindServiceProvider',
+    29 => 'Spatie\\LaravelIgnition\\IgnitionServiceProvider',
+    30 => 'App\\Providers\\AppServiceProvider',
+  ),
+  'eager' => 
+  array (
+    0 => 'Illuminate\\Auth\\AuthServiceProvider',
+    1 => 'Illuminate\\Cookie\\CookieServiceProvider',
+    2 => 'Illuminate\\Database\\DatabaseServiceProvider',
+    3 => 'Illuminate\\Encryption\\EncryptionServiceProvider',
+    4 => 'Illuminate\\Filesystem\\FilesystemServiceProvider',
+    5 => 'Illuminate\\Foundation\\Providers\\FoundationServiceProvider',
+    6 => 'Illuminate\\Notifications\\NotificationServiceProvider',
+    7 => 'Illuminate\\Pagination\\PaginationServiceProvider',
+    8 => 'Illuminate\\Session\\SessionServiceProvider',
+    9 => 'Illuminate\\View\\ViewServiceProvider',
+    10 => 'Carbon\\Laravel\\ServiceProvider',
+    11 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
+    12 => 'Termwind\\Laravel\\TermwindServiceProvider',
+    13 => 'Spatie\\LaravelIgnition\\IgnitionServiceProvider',
+    14 => 'App\\Providers\\AppServiceProvider',
+  ),
+  'deferred' => 
+  array (
+    'Illuminate\\Broadcasting\\BroadcastManager' => 'Illuminate\\Broadcasting\\BroadcastServiceProvider',
+    'Illuminate\\Contracts\\Broadcasting\\Factory' => 'Illuminate\\Broadcasting\\BroadcastServiceProvider',
+    'Illuminate\\Contracts\\Broadcasting\\Broadcaster' => 'Illuminate\\Broadcasting\\BroadcastServiceProvider',
+    'Illuminate\\Bus\\Dispatcher' => 'Illuminate\\Bus\\BusServiceProvider',
+    'Illuminate\\Contracts\\Bus\\Dispatcher' => 'Illuminate\\Bus\\BusServiceProvider',
+    'Illuminate\\Contracts\\Bus\\QueueingDispatcher' => 'Illuminate\\Bus\\BusServiceProvider',
+    'Illuminate\\Bus\\BatchRepository' => 'Illuminate\\Bus\\BusServiceProvider',
+    'Illuminate\\Bus\\DatabaseBatchRepository' => 'Illuminate\\Bus\\BusServiceProvider',
+    'cache' => 'Illuminate\\Cache\\CacheServiceProvider',
+    'cache.store' => 'Illuminate\\Cache\\CacheServiceProvider',
+    'cache.psr6' => 'Illuminate\\Cache\\CacheServiceProvider',
+    'memcached.connector' => 'Illuminate\\Cache\\CacheServiceProvider',
+    'Illuminate\\Cache\\RateLimiter' => 'Illuminate\\Cache\\CacheServiceProvider',
+    'Illuminate\\Foundation\\Console\\AboutCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Cache\\Console\\ClearCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Cache\\Console\\ForgetCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ClearCompiledCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Auth\\Console\\ClearResetsCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ConfigCacheCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ConfigClearCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ConfigShowCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\DbCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\MonitorCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\PruneCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\ShowCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\TableCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\WipeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\DownCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\EnvironmentCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\EnvironmentDecryptCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\EnvironmentEncryptCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\EventCacheCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\EventClearCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\EventListCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Concurrency\\Console\\InvokeSerializedClosureCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\KeyGenerateCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\OptimizeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\OptimizeClearCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\PackageDiscoverCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Cache\\Console\\PruneStaleTagsCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\ClearCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\ListFailedCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\FlushFailedCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\ForgetFailedCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\ListenCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\MonitorCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\PruneBatchesCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\PruneFailedJobsCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\RestartCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\RetryCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\RetryBatchCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\WorkCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\RouteCacheCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\RouteClearCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\RouteListCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\DumpCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\Seeds\\SeedCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Console\\Scheduling\\ScheduleFinishCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Console\\Scheduling\\ScheduleListCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Console\\Scheduling\\ScheduleRunCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Console\\Scheduling\\ScheduleClearCacheCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Console\\Scheduling\\ScheduleTestCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Console\\Scheduling\\ScheduleWorkCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Console\\Scheduling\\ScheduleInterruptCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\ShowModelCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\StorageLinkCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\StorageUnlinkCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\UpCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ViewCacheCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ViewClearCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ApiInstallCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\BroadcastingInstallCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Cache\\Console\\CacheTableCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\CastMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ChannelListCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ChannelMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ClassMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ComponentMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ConfigPublishCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ConsoleMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Routing\\Console\\ControllerMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\DocsCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\EnumMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\EventGenerateCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\EventMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ExceptionMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\Factories\\FactoryMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\InterfaceMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\JobMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\JobMiddlewareMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\LangPublishCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ListenerMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\MailMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Routing\\Console\\MiddlewareMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ModelMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\NotificationMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Notifications\\Console\\NotificationTableCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ObserverMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\PolicyMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ProviderMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\FailedTableCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\TableCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Queue\\Console\\BatchesTableCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\RequestMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ResourceMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\RuleMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ScopeMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\Seeds\\SeederMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Session\\Console\\SessionTableCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ServeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\StubPublishCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\TestMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\TraitMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\VendorPublishCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Foundation\\Console\\ViewMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'migrator' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'migration.repository' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'migration.creator' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\Migrations\\MigrateCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\Migrations\\FreshCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\Migrations\\InstallCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\Migrations\\RefreshCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\Migrations\\ResetCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\Migrations\\RollbackCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\Migrations\\StatusCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Database\\Console\\Migrations\\MigrateMakeCommand' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'composer' => 'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider',
+    'Illuminate\\Concurrency\\ConcurrencyManager' => 'Illuminate\\Concurrency\\ConcurrencyServiceProvider',
+    'hash' => 'Illuminate\\Hashing\\HashServiceProvider',
+    'hash.driver' => 'Illuminate\\Hashing\\HashServiceProvider',
+    'mail.manager' => 'Illuminate\\Mail\\MailServiceProvider',
+    'mailer' => 'Illuminate\\Mail\\MailServiceProvider',
+    'Illuminate\\Mail\\Markdown' => 'Illuminate\\Mail\\MailServiceProvider',
+    'auth.password' => 'Illuminate\\Auth\\Passwords\\PasswordResetServiceProvider',
+    'auth.password.broker' => 'Illuminate\\Auth\\Passwords\\PasswordResetServiceProvider',
+    'Illuminate\\Contracts\\Pipeline\\Hub' => 'Illuminate\\Pipeline\\PipelineServiceProvider',
+    'pipeline' => 'Illuminate\\Pipeline\\PipelineServiceProvider',
+    'queue' => 'Illuminate\\Queue\\QueueServiceProvider',
+    'queue.connection' => 'Illuminate\\Queue\\QueueServiceProvider',
+    'queue.failer' => 'Illuminate\\Queue\\QueueServiceProvider',
+    'queue.listener' => 'Illuminate\\Queue\\QueueServiceProvider',
+    'queue.worker' => 'Illuminate\\Queue\\QueueServiceProvider',
+    'redis' => 'Illuminate\\Redis\\RedisServiceProvider',
+    'redis.connection' => 'Illuminate\\Redis\\RedisServiceProvider',
+    'translator' => 'Illuminate\\Translation\\TranslationServiceProvider',
+    'translation.loader' => 'Illuminate\\Translation\\TranslationServiceProvider',
+    'validator' => 'Illuminate\\Validation\\ValidationServiceProvider',
+    'validation.presence' => 'Illuminate\\Validation\\ValidationServiceProvider',
+    'Illuminate\\Contracts\\Validation\\UncompromisedVerifier' => 'Illuminate\\Validation\\ValidationServiceProvider',
+    'Laravel\\Breeze\\Console\\InstallCommand' => 'Laravel\\Breeze\\BreezeServiceProvider',
+    'Laravel\\Sail\\Console\\InstallCommand' => 'Laravel\\Sail\\SailServiceProvider',
+    'Laravel\\Sail\\Console\\PublishCommand' => 'Laravel\\Sail\\SailServiceProvider',
+    'command.tinker' => 'Laravel\\Tinker\\TinkerServiceProvider',
+  ),
+  'when' => 
+  array (
+    'Illuminate\\Broadcasting\\BroadcastServiceProvider' => 
+    array (
+    ),
+    'Illuminate\\Bus\\BusServiceProvider' => 
+    array (
+    ),
+    'Illuminate\\Cache\\CacheServiceProvider' => 
+    array (
+    ),
+    'Illuminate\\Foundation\\Providers\\ConsoleSupportServiceProvider' => 
+    array (
+    ),
+    'Illuminate\\Concurrency\\ConcurrencyServiceProvider' => 
+    array (
+    ),
+    'Illuminate\\Hashing\\HashServiceProvider' => 
+    array (
+    ),
+    'Illuminate\\Mail\\MailServiceProvider' => 
+    array (
+    ),
+    'Illuminate\\Auth\\Passwords\\PasswordResetServiceProvider' => 
+    array (
+    ),
+    'Illuminate\\Pipeline\\PipelineServiceProvider' => 
+    array (
+    ),
+    'Illuminate\\Queue\\QueueServiceProvider' => 
+    array (
+    ),
+    'Illuminate\\Redis\\RedisServiceProvider' => 
+    array (
+    ),
+    'Illuminate\\Translation\\TranslationServiceProvider' => 
+    array (
+    ),
+    'Illuminate\\Validation\\ValidationServiceProvider' => 
+    array (
+    ),
+    'Laravel\\Breeze\\BreezeServiceProvider' => 
+    array (
+    ),
+    'Laravel\\Sail\\SailServiceProvider' => 
+    array (
+    ),
+    'Laravel\\Tinker\\TinkerServiceProvider' => 
+    array (
+    ),
+  ),
+);
+
+app.php
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware) {
+        // MENDAFTARKAN ALIAS SATPAM ADMIN DI SINI
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+        ]);
+    })
+    ->withExceptions(function (Exceptions $exceptions) {
+        //
+    })->create();
+
+    providers.php
+    <?php
+
+return [
+    App\Providers\AppServiceProvider::class,
+];
+
+
+config/app.php
+app.php
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Name
+    |--------------------------------------------------------------------------
+    |
+    | This value is the name of your application, which will be used when the
+    | framework needs to place the application's name in a notification or
+    | other UI elements where an application name needs to be displayed.
+    |
+    */
+
+    'name' => env('APP_NAME', 'Laravel'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Environment
+    |--------------------------------------------------------------------------
+    |
+    | This value determines the "environment" your application is currently
+    | running in. This may determine how you prefer to configure various
+    | services the application utilizes. Set this in your ".env" file.
+    |
+    */
+
+    'env' => env('APP_ENV', 'production'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Debug Mode
+    |--------------------------------------------------------------------------
+    |
+    | When your application is in debug mode, detailed error messages with
+    | stack traces will be shown on every error that occurs within your
+    | application. If disabled, a simple generic error page is shown.
+    |
+    */
+
+    'debug' => (bool) env('APP_DEBUG', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application URL
+    |--------------------------------------------------------------------------
+    |
+    | This URL is used by the console to properly generate URLs when using
+    | the Artisan command line tool. You should set this to the root of
+    | the application so that it's available within Artisan commands.
+    |
+    */
+
+    'url' => env('APP_URL', 'http://localhost'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Timezone
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify the default timezone for your application, which
+    | will be used by the PHP date and date-time functions. The timezone
+    | is set to "UTC" by default as it is suitable for most use cases.
+    |
+    */
+
+    'timezone' => env('APP_TIMEZONE', 'UTC'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Locale Configuration
+    |--------------------------------------------------------------------------
+    |
+    | The application locale determines the default locale that will be used
+    | by Laravel's translation / localization methods. This option can be
+    | set to any locale for which you plan to have translation strings.
+    |
+    */
+
+    'locale' => env('APP_LOCALE', 'en'),
+
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+
+    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Encryption Key
+    |--------------------------------------------------------------------------
+    |
+    | This key is utilized by Laravel's encryption services and should be set
+    | to a random, 32 character string to ensure that all encrypted values
+    | are secure. You should do this prior to deploying the application.
+    |
+    */
+
+    'cipher' => 'AES-256-CBC',
+
+    'key' => env('APP_KEY'),
+
+    'previous_keys' => [
+        ...array_filter(
+            explode(',', env('APP_PREVIOUS_KEYS', ''))
+        ),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Maintenance Mode Driver
+    |--------------------------------------------------------------------------
+    |
+    | These configuration options determine the driver used to determine and
+    | manage Laravel's "maintenance mode" status. The "cache" driver will
+    | allow maintenance mode to be controlled across multiple machines.
+    |
+    | Supported drivers: "file", "cache"
+    |
+    */
+
+    'maintenance' => [
+        'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
+        'store' => env('APP_MAINTENANCE_STORE', 'database'),
+    ],
+
+];
+
+auth.php
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication Defaults
+    |--------------------------------------------------------------------------
+    |
+    | This option defines the default authentication "guard" and password
+    | reset "broker" for your application. You may change these values
+    | as required, but they're a perfect start for most applications.
+    |
+    */
+
+    'defaults' => [
+        'guard' => env('AUTH_GUARD', 'web'),
+        'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication Guards
+    |--------------------------------------------------------------------------
+    |
+    | Next, you may define every authentication guard for your application.
+    | Of course, a great default configuration has been defined for you
+    | which utilizes session storage plus the Eloquent user provider.
+    |
+    | All authentication guards have a user provider, which defines how the
+    | users are actually retrieved out of your database or other storage
+    | system used by the application. Typically, Eloquent is utilized.
+    |
+    | Supported: "session"
+    |
+    */
+
+    'guards' => [
+        'web' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | User Providers
+    |--------------------------------------------------------------------------
+    |
+    | All authentication guards have a user provider, which defines how the
+    | users are actually retrieved out of your database or other storage
+    | system used by the application. Typically, Eloquent is utilized.
+    |
+    | If you have multiple user tables or models you may configure multiple
+    | providers to represent the model / table. These providers may then
+    | be assigned to any extra authentication guards you have defined.
+    |
+    | Supported: "database", "eloquent"
+    |
+    */
+
+    'providers' => [
+        'users' => [
+            'driver' => 'eloquent',
+            'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+
+        // 'users' => [
+        //     'driver' => 'database',
+        //     'table' => 'users',
+        // ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resetting Passwords
+    |--------------------------------------------------------------------------
+    |
+    | These configuration options specify the behavior of Laravel's password
+    | reset functionality, including the table utilized for token storage
+    | and the user provider that is invoked to actually retrieve users.
+    |
+    | The expiry time is the number of minutes that each reset token will be
+    | considered valid. This security feature keeps tokens short-lived so
+    | they have less time to be guessed. You may change this as needed.
+    |
+    | The throttle setting is the number of seconds a user must wait before
+    | generating more password reset tokens. This prevents the user from
+    | quickly generating a very large amount of password reset tokens.
+    |
+    */
+
+    'passwords' => [
+        'users' => [
+            'provider' => 'users',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Password Confirmation Timeout
+    |--------------------------------------------------------------------------
+    |
+    | Here you may define the amount of seconds before a password confirmation
+    | window expires and users are asked to re-enter their password via the
+    | confirmation screen. By default, the timeout lasts for three hours.
+    |
+    */
+
+    'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+
+];
+
+
+cache.php
+<?php
+
+use Illuminate\Support\Str;
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Cache Store
+    |--------------------------------------------------------------------------
+    |
+    | This option controls the default cache store that will be used by the
+    | framework. This connection is utilized if another isn't explicitly
+    | specified when running a cache operation inside the application.
+    |
+    */
+
+    'default' => env('CACHE_STORE', 'database'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cache Stores
+    |--------------------------------------------------------------------------
+    |
+    | Here you may define all of the cache "stores" for your application as
+    | well as their drivers. You may even define multiple stores for the
+    | same cache driver to group types of items stored in your caches.
+    |
+    | Supported drivers: "apc", "array", "database", "file", "memcached",
+    |                    "redis", "dynamodb", "octane", "null"
+    |
+    */
+
+    'stores' => [
+
+        'array' => [
+            'driver' => 'array',
+            'serialize' => false,
+        ],
+
+        'database' => [
+            'driver' => 'database',
+            'table' => env('DB_CACHE_TABLE', 'cache'),
+            'connection' => env('DB_CACHE_CONNECTION', null),
+            'lock_connection' => env('DB_CACHE_LOCK_CONNECTION', null),
+        ],
+
+        'file' => [
+            'driver' => 'file',
+            'path' => storage_path('framework/cache/data'),
+            'lock_path' => storage_path('framework/cache/data'),
+        ],
+
+        'memcached' => [
+            'driver' => 'memcached',
+            'persistent_id' => env('MEMCACHED_PERSISTENT_ID'),
+            'sasl' => [
+                env('MEMCACHED_USERNAME'),
+                env('MEMCACHED_PASSWORD'),
+            ],
+            'options' => [
+                // Memcached::OPT_CONNECT_TIMEOUT => 2000,
+            ],
+            'servers' => [
+                [
+                    'host' => env('MEMCACHED_HOST', '127.0.0.1'),
+                    'port' => env('MEMCACHED_PORT', 11211),
+                    'weight' => 100,
+                ],
+            ],
+        ],
+
+        'redis' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_CACHE_CONNECTION', 'cache'),
+            'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
+        ],
+
+        'dynamodb' => [
+            'driver' => 'dynamodb',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'table' => env('DYNAMODB_CACHE_TABLE', 'cache'),
+            'endpoint' => env('DYNAMODB_ENDPOINT'),
+        ],
+
+        'octane' => [
+            'driver' => 'octane',
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cache Key Prefix
+    |--------------------------------------------------------------------------
+    |
+    | When utilizing the APC, database, memcached, Redis, and DynamoDB cache
+    | stores, there might be other applications using the same cache. For
+    | that reason, you may prefix every cache key to avoid collisions.
+    |
+    */
+
+    'prefix' => env('CACHE_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_cache_'),
+
+];
+
+
+database.php
+<?php
+
+use Illuminate\Support\Str;
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Database Connection Name
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify which of the database connections below you wish
+    | to use as your default connection for database operations. This is
+    | the connection which will be utilized unless another connection
+    | is explicitly specified when you execute a query / statement.
+    |
+    */
+
+    'default' => env('DB_CONNECTION', 'sqlite'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Database Connections
+    |--------------------------------------------------------------------------
+    |
+    | Below are all of the database connections defined for your application.
+    | An example configuration is provided for each database system which
+    | is supported by Laravel. You're free to add / remove connections.
+    |
+    */
+
+    'connections' => [
+
+        'sqlite' => [
+            'driver' => 'sqlite',
+            'url' => env('DB_URL'),
+            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            'prefix' => '',
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+        ],
+
+        'mysql' => [
+            'driver' => 'mysql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'mariadb' => [
+            'driver' => 'mariadb',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_uca1400_ai_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'pgsql' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ],
+
+        'sqlsrv' => [
+            'driver' => 'sqlsrv',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', 'localhost'),
+            'port' => env('DB_PORT', '1433'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            // 'encrypt' => env('DB_ENCRYPT', 'yes'),
+            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Migration Repository Table
+    |--------------------------------------------------------------------------
+    |
+    | This table keeps track of all the migrations that have already run for
+    | your application. Using this information, we can determine which of
+    | the migrations on disk haven't actually been run on the database.
+    |
+    */
+
+    'migrations' => [
+        'table' => 'migrations',
+        'update_date_on_publish' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Redis Databases
+    |--------------------------------------------------------------------------
+    |
+    | Redis is an open source, fast, and advanced key-value store that also
+    | provides a richer body of commands than a typical key-value system
+    | such as Memcached. You may define your connection settings here.
+    |
+    */
+
+    'redis' => [
+
+        'client' => env('REDIS_CLIENT', 'phpredis'),
+
+        'options' => [
+            'cluster' => env('REDIS_CLUSTER', 'redis'),
+            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_database_'),
+        ],
+
+        'default' => [
+            'url' => env('REDIS_URL'),
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_USERNAME'),
+            'password' => env('REDIS_PASSWORD'),
+            'port' => env('REDIS_PORT', '6379'),
+            'database' => env('REDIS_DB', '0'),
+        ],
+
+        'cache' => [
+            'url' => env('REDIS_URL'),
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_USERNAME'),
+            'password' => env('REDIS_PASSWORD'),
+            'port' => env('REDIS_PORT', '6379'),
+            'database' => env('REDIS_CACHE_DB', '1'),
+        ],
+
+    ],
+
+];
+
+
+filesystem.php
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Filesystem Disk
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify the default filesystem disk that should be used
+    | by the framework. The "local" disk, as well as a variety of cloud
+    | based disks are available to your application for file storage.
+    |
+    */
+
+    'default' => env('FILESYSTEM_DISK', 'local'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Filesystem Disks
+    |--------------------------------------------------------------------------
+    |
+    | Below you may configure as many filesystem disks as necessary, and you
+    | may even configure multiple disks for the same driver. Examples for
+    | most supported storage drivers are configured here for reference.
+    |
+    | Supported Drivers: "local", "ftp", "sftp", "s3"
+    |
+    */
+
+    'disks' => [
+
+        'local' => [
+            'driver' => 'local',
+            'root' => storage_path('app'),
+            'throw' => false,
+        ],
+
+        'public' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public'),
+            'url' => env('APP_URL').'/storage',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
+        's3' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BUCKET'),
+            'url' => env('AWS_URL'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Symbolic Links
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure the symbolic links that will be created when the
+    | `storage:link` Artisan command is executed. The array keys should be
+    | the locations of the links and the values should be their targets.
+    |
+    */
+
+    'links' => [
+        public_path('storage') => storage_path('app/public'),
+    ],
+
+];
+
+
+logging.php
+<?php
+
+use Monolog\Handler\NullHandler;
+use Monolog\Handler\StreamHandler;
+use Monolog\Handler\SyslogUdpHandler;
+use Monolog\Processor\PsrLogMessageProcessor;
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Log Channel
+    |--------------------------------------------------------------------------
+    |
+    | This option defines the default log channel that is utilized to write
+    | messages to your logs. The value provided here should match one of
+    | the channels present in the list of "channels" configured below.
+    |
+    */
+
+    'default' => env('LOG_CHANNEL', 'stack'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Deprecations Log Channel
+    |--------------------------------------------------------------------------
+    |
+    | This option controls the log channel that should be used to log warnings
+    | regarding deprecated PHP and library features. This allows you to get
+    | your application ready for upcoming major versions of dependencies.
+    |
+    */
+
+    'deprecations' => [
+        'channel' => env('LOG_DEPRECATIONS_CHANNEL', 'null'),
+        'trace' => env('LOG_DEPRECATIONS_TRACE', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Log Channels
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure the log channels for your application. Laravel
+    | utilizes the Monolog PHP logging library, which includes a variety
+    | of powerful log handlers and formatters that you're free to use.
+    |
+    | Available Drivers: "single", "daily", "slack", "syslog",
+    |                    "errorlog", "monolog", "custom", "stack"
+    |
+    */
+
+    'channels' => [
+
+        'stack' => [
+            'driver' => 'stack',
+            'channels' => explode(',', env('LOG_STACK', 'single')),
+            'ignore_exceptions' => false,
+        ],
+
+        'single' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'daily' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
+        'slack' => [
+            'driver' => 'slack',
+            'url' => env('LOG_SLACK_WEBHOOK_URL'),
+            'username' => env('LOG_SLACK_USERNAME', 'Laravel Log'),
+            'emoji' => env('LOG_SLACK_EMOJI', ':boom:'),
+            'level' => env('LOG_LEVEL', 'critical'),
+            'replace_placeholders' => true,
+        ],
+
+        'papertrail' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'handler' => env('LOG_PAPERTRAIL_HANDLER', SyslogUdpHandler::class),
+            'handler_with' => [
+                'host' => env('PAPERTRAIL_URL'),
+                'port' => env('PAPERTRAIL_PORT'),
+                'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
+            ],
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+
+        'stderr' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'handler' => StreamHandler::class,
+            'formatter' => env('LOG_STDERR_FORMATTER'),
+            'with' => [
+                'stream' => 'php://stderr',
+            ],
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+
+        'syslog' => [
+            'driver' => 'syslog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'facility' => env('LOG_SYSLOG_FACILITY', LOG_USER),
+            'replace_placeholders' => true,
+        ],
+
+        'errorlog' => [
+            'driver' => 'errorlog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'null' => [
+            'driver' => 'monolog',
+            'handler' => NullHandler::class,
+        ],
+
+        'emergency' => [
+            'path' => storage_path('logs/laravel.log'),
+        ],
+
+    ],
+
+];
+
+mail.php
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Mailer
+    |--------------------------------------------------------------------------
+    |
+    | This option controls the default mailer that is used to send all email
+    | messages unless another mailer is explicitly specified when sending
+    | the message. All additional mailers can be configured within the
+    | "mailers" array. Examples of each type of mailer are provided.
+    |
+    */
+
+    'default' => env('MAIL_MAILER', 'log'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mailer Configurations
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure all of the mailers used by your application plus
+    | their respective settings. Several examples have been configured for
+    | you and you are free to add your own as your application requires.
+    |
+    | Laravel supports a variety of mail "transport" drivers that can be used
+    | when delivering an email. You may specify which one you're using for
+    | your mailers below. You may also add additional mailers if needed.
+    |
+    | Supported: "smtp", "sendmail", "mailgun", "ses", "ses-v2",
+    |            "postmark", "log", "array", "failover", "roundrobin"
+    |
+    */
+
+    'mailers' => [
+
+        'smtp' => [
+            'transport' => 'smtp',
+            'url' => env('MAIL_URL'),
+            'host' => env('MAIL_HOST', '127.0.0.1'),
+            'port' => env('MAIL_PORT', 2525),
+            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+            'username' => env('MAIL_USERNAME'),
+            'password' => env('MAIL_PASSWORD'),
+            'timeout' => null,
+            'local_domain' => env('MAIL_EHLO_DOMAIN'),
+        ],
+
+        'ses' => [
+            'transport' => 'ses',
+        ],
+
+        'postmark' => [
+            'transport' => 'postmark',
+            // 'message_stream_id' => env('POSTMARK_MESSAGE_STREAM_ID'),
+            // 'client' => [
+            //     'timeout' => 5,
+            // ],
+        ],
+
+        'sendmail' => [
+            'transport' => 'sendmail',
+            'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),
+        ],
+
+        'log' => [
+            'transport' => 'log',
+            'channel' => env('MAIL_LOG_CHANNEL'),
+        ],
+
+        'array' => [
+            'transport' => 'array',
+        ],
+
+        'failover' => [
+            'transport' => 'failover',
+            'mailers' => [
+                'smtp',
+                'log',
+            ],
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Global "From" Address
+    |--------------------------------------------------------------------------
+    |
+    | You may wish for all emails sent by your application to be sent from
+    | the same address. Here you may specify a name and address that is
+    | used globally for all emails that are sent by your application.
+    |
+    */
+
+    'from' => [
+        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+        'name' => env('MAIL_FROM_NAME', 'Example'),
+    ],
+
+];
+
+queue.php
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Queue Connection Name
+    |--------------------------------------------------------------------------
+    |
+    | Laravel's queue supports a variety of backends via a single, unified
+    | API, giving you convenient access to each backend using identical
+    | syntax for each. The default queue connection is defined below.
+    |
+    */
+
+    'default' => env('QUEUE_CONNECTION', 'database'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Queue Connections
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure the connection options for every queue backend
+    | used by your application. An example configuration is provided for
+    | each backend supported by Laravel. You're also free to add more.
+    |
+    | Drivers: "sync", "database", "beanstalkd", "sqs", "redis", "null"
+    |
+    */
+
+    'connections' => [
+
+        'sync' => [
+            'driver' => 'sync',
+        ],
+
+        'database' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION', null),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => env('DB_QUEUE', 'default'),
+            'retry_after' => env('DB_QUEUE_RETRY_AFTER', 90),
+            'after_commit' => false,
+        ],
+
+        'beanstalkd' => [
+            'driver' => 'beanstalkd',
+            'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),
+            'queue' => env('BEANSTALKD_QUEUE', 'default'),
+            'retry_after' => env('BEANSTALKD_QUEUE_RETRY_AFTER', 90),
+            'block_for' => 0,
+            'after_commit' => false,
+        ],
+
+        'sqs' => [
+            'driver' => 'sqs',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'prefix' => env('SQS_PREFIX', 'https://sqs.us-east-1.amazonaws.com/your-account-id'),
+            'queue' => env('SQS_QUEUE', 'default'),
+            'suffix' => env('SQS_SUFFIX'),
+            'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'after_commit' => false,
+        ],
+
+        'redis' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => env('REDIS_QUEUE', 'default'),
+            'retry_after' => env('REDIS_QUEUE_RETRY_AFTER', 90),
+            'block_for' => null,
+            'after_commit' => false,
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Job Batching
+    |--------------------------------------------------------------------------
+    |
+    | The following options configure the database and table that store job
+    | batching information. These options can be updated to any database
+    | connection and table which has been defined by your application.
+    |
+    */
+
+    'batching' => [
+        'database' => env('DB_CONNECTION', 'sqlite'),
+        'table' => 'job_batches',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Failed Queue Jobs
+    |--------------------------------------------------------------------------
+    |
+    | These options configure the behavior of failed queue job logging so you
+    | can control how and where failed jobs are stored. Laravel ships with
+    | support for storing failed jobs in a simple file or in a database.
+    |
+    | Supported drivers: "database-uuids", "dynamodb", "file", "null"
+    |
+    */
+
+    'failed' => [
+        'driver' => env('QUEUE_FAILED_DRIVER', 'database-uuids'),
+        'database' => env('DB_CONNECTION', 'sqlite'),
+        'table' => 'failed_jobs',
+    ],
+
+];
+
+services.php
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Third Party Services
+    |--------------------------------------------------------------------------
+    |
+    | This file is for storing the credentials for third party services such
+    | as Mailgun, Postmark, AWS and more. This file provides the de facto
+    | location for this type of information, allowing packages to have
+    | a conventional file to locate the various service credentials.
+    |
+    */
+
+    'postmark' => [
+        'token' => env('POSTMARK_TOKEN'),
+    ],
+
+    'ses' => [
+        'key' => env('AWS_ACCESS_KEY_ID'),
+        'secret' => env('AWS_SECRET_ACCESS_KEY'),
+        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    ],
+
+    'slack' => [
+        'notifications' => [
+            'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
+            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
+        ],
+    ],
+
+];
+
+session.php
+<?php
+
+use Illuminate\Support\Str;
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Session Driver
+    |--------------------------------------------------------------------------
+    |
+    | This option determines the default session driver that is utilized for
+    | incoming requests. Laravel supports a variety of storage options to
+    | persist session data. Database storage is a great default choice.
+    |
+    | Supported: "file", "cookie", "database", "apc",
+    |            "memcached", "redis", "dynamodb", "array"
+    |
+    */
+
+    'driver' => env('SESSION_DRIVER', 'database'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Lifetime
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify the number of minutes that you wish the session
+    | to be allowed to remain idle before it expires. If you want them
+    | to expire immediately when the browser is closed then you may
+    | indicate that via the expire_on_close configuration option.
+    |
+    */
+
+    'lifetime' => env('SESSION_LIFETIME', 120),
+
+    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Encryption
+    |--------------------------------------------------------------------------
+    |
+    | This option allows you to easily specify that all of your session data
+    | should be encrypted before it's stored. All encryption is performed
+    | automatically by Laravel and you may use the session like normal.
+    |
+    */
+
+    'encrypt' => env('SESSION_ENCRYPT', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session File Location
+    |--------------------------------------------------------------------------
+    |
+    | When utilizing the "file" session driver, the session files are placed
+    | on disk. The default storage location is defined here; however, you
+    | are free to provide another location where they should be stored.
+    |
+    */
+
+    'files' => storage_path('framework/sessions'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Database Connection
+    |--------------------------------------------------------------------------
+    |
+    | When using the "database" or "redis" session drivers, you may specify a
+    | connection that should be used to manage these sessions. This should
+    | correspond to a connection in your database configuration options.
+    |
+    */
+
+    'connection' => env('SESSION_CONNECTION'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Database Table
+    |--------------------------------------------------------------------------
+    |
+    | When using the "database" session driver, you may specify the table to
+    | be used to store sessions. Of course, a sensible default is defined
+    | for you; however, you're welcome to change this to another table.
+    |
+    */
+
+    'table' => env('SESSION_TABLE', 'sessions'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Cache Store
+    |--------------------------------------------------------------------------
+    |
+    | When using one of the framework's cache driven session backends, you may
+    | define the cache store which should be used to store the session data
+    | between requests. This must match one of your defined cache stores.
+    |
+    | Affects: "apc", "dynamodb", "memcached", "redis"
+    |
+    */
+
+    'store' => env('SESSION_STORE'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Sweeping Lottery
+    |--------------------------------------------------------------------------
+    |
+    | Some session drivers must manually sweep their storage location to get
+    | rid of old sessions from storage. Here are the chances that it will
+    | happen on a given request. By default, the odds are 2 out of 100.
+    |
+    */
+
+    'lottery' => [2, 100],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Cookie Name
+    |--------------------------------------------------------------------------
+    |
+    | Here you may change the name of the session cookie that is created by
+    | the framework. Typically, you should not need to change this value
+    | since doing so does not grant a meaningful security improvement.
+    |
+    |
+    */
+
+    'cookie' => env(
+        'SESSION_COOKIE',
+        Str::slug(env('APP_NAME', 'laravel'), '_').'_session'
+    ),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Cookie Path
+    |--------------------------------------------------------------------------
+    |
+    | The session cookie path determines the path for which the cookie will
+    | be regarded as available. Typically, this will be the root path of
+    | your application, but you're free to change this when necessary.
+    |
+    */
+
+    'path' => env('SESSION_PATH', '/'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Cookie Domain
+    |--------------------------------------------------------------------------
+    |
+    | This value determines the domain and subdomains the session cookie is
+    | available to. By default, the cookie will be available to the root
+    | domain and all subdomains. Typically, this shouldn't be changed.
+    |
+    */
+
+    'domain' => env('SESSION_DOMAIN'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | HTTPS Only Cookies
+    |--------------------------------------------------------------------------
+    |
+    | By setting this option to true, session cookies will only be sent back
+    | to the server if the browser has a HTTPS connection. This will keep
+    | the cookie from being sent to you when it can't be done securely.
+    |
+    */
+
+    'secure' => env('SESSION_SECURE_COOKIE'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | HTTP Access Only
+    |--------------------------------------------------------------------------
+    |
+    | Setting this value to true will prevent JavaScript from accessing the
+    | value of the cookie and the cookie will only be accessible through
+    | the HTTP protocol. It's unlikely you should disable this option.
+    |
+    */
+
+    'http_only' => env('SESSION_HTTP_ONLY', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Same-Site Cookies
+    |--------------------------------------------------------------------------
+    |
+    | This option determines how your cookies behave when cross-site requests
+    | take place, and can be used to mitigate CSRF attacks. By default, we
+    | will set this value to "lax" to permit secure cross-site requests.
+    |
+    | See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
+    |
+    | Supported: "lax", "strict", "none", null
+    |
+    */
+
+    'same_site' => env('SESSION_SAME_SITE', 'lax'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Partitioned Cookies
+    |--------------------------------------------------------------------------
+    |
+    | Setting this value to true will tie the cookie to the top-level site for
+    | a cross-site context. Partitioned cookies are accepted by the browser
+    | when flagged "secure" and the Same-Site attribute is set to "none".
+    |
+    */
+
+    'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
+
+];
+
+
+
+factories
+userfactory.php
+<?php
+
+namespace Database\Factories;
+
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ */
+class UserFactory extends Factory
+{
+    /**
+     * The current password being used by the factory.
+     */
+    protected static ?string $password;
+
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'email_verified_at' => now(),
+            'password' => static::$password ??= Hash::make('password'),
+            'remember_token' => Str::random(10),
+        ];
+    }
+
+    /**
+     * Indicate that the model's email address should be unverified.
+     */
+    public function unverified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email_verified_at' => null,
+        ]);
+    }
+}
+
+migrations
+0001_01_01_000000_create_users_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('sessions');
+    }
+};
+
+0001_01_01_000001_create_cache_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('cache', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->mediumText('value');
+            $table->integer('expiration');
+        });
+
+        Schema::create('cache_locks', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->string('owner');
+            $table->integer('expiration');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('cache');
+        Schema::dropIfExists('cache_locks');
+    }
+};
+
+0001_01_01_000002_create_jobs_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('queue')->index();
+            $table->longText('payload');
+            $table->unsignedTinyInteger('attempts');
+            $table->unsignedInteger('reserved_at')->nullable();
+            $table->unsignedInteger('available_at');
+            $table->unsignedInteger('created_at');
+        });
+
+        Schema::create('job_batches', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('name');
+            $table->integer('total_jobs');
+            $table->integer('pending_jobs');
+            $table->integer('failed_jobs');
+            $table->longText('failed_job_ids');
+            $table->mediumText('options')->nullable();
+            $table->integer('cancelled_at')->nullable();
+            $table->integer('created_at');
+            $table->integer('finished_at')->nullable();
+        });
+
+        Schema::create('failed_jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('uuid')->unique();
+            $table->text('connection');
+            $table->text('queue');
+            $table->longText('payload');
+            $table->longText('exception');
+            $table->timestamp('failed_at')->useCurrent();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('jobs');
+        Schema::dropIfExists('job_batches');
+        Schema::dropIfExists('failed_jobs');
+    }
+};
+
+2026_06_15_131955_create_products_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+{
+    Schema::create('products', function (Blueprint $table) {
+        $table->id();
+        $table->string('name');
+        $table->string('slug')->unique(); // Untuk URL (contoh: /product/mouse-gaming)
+        $table->string('brand');
+        $table->text('description');
+        $table->decimal('base_price', 12, 2);
+        $table->timestamps();
+    });
+}
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('products');
+    }
+};
+
+2026_06_15_131956_create_product_variants_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+{
+    Schema::create('product_variants', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('product_id')->constrained()->onDelete('cascade'); // Hubungan ke tabel produk
+        $table->string('nama_varian'); // Contoh: "Hitam RGB" atau "Putih Polos"
+        $table->integer('stok')->default(0);
+        $table->timestamps();
+    });
+}
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('product_variants');
+    }
+};
+
+
+2026_06_15_144034_add_image_to_products_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+   public function up(): void
+{
+    Schema::table('products', function (Blueprint $table) {
+        $table->string('image')->nullable()->after('base_price'); // Menambah kolom image
+    });
+}
+
+public function down(): void
+{
+    Schema::table('products', function (Blueprint $table) {
+        $table->dropColumn('image');
+    });
+}
+};
+
+
+
+seeders
+DatabaseSeeder.php
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\User;
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
+    {
+        // User::factory(10)->create();
+
+        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+        ]);
+    }
+}
+
+
+resources/css
+app.css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+js
+app.js
+import './bootstrap';
+
+import Alpine from 'alpinejs';
+
+window.Alpine = Alpine;
+
+Alpine.start();
+
+bootstrap.js
+import axios from 'axios';
+window.axios = axios;
+
+window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
+
+views/admin/retur
+index.blade.php
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barang Retur - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-xl font-black text-gray-900">Daftar Barang Retur</h1>
+            <a href="{{ route('admin.dashboard') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-xl transition text-sm">
+                <i class="fa-solid fa-arrow-left mr-2"></i>Kembali ke Dashboard
+            </a>
+        </div>
+        <p class="text-sm text-gray-500">Halaman data keluhan retur/pengembalian barang dari konsumen.</p>
+    </div>
+</body>
+</html>
+
+
+terjual
+index.blade.php
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barang Terjual - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-xl font-black text-gray-900">Daftar Barang Terjual</h1>
+            <a href="{{ route('admin.dashboard') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-xl transition text-sm">
+                <i class="fa-solid fa-arrow-left mr-2"></i>Kembali ke Dashboard
+            </a>
+        </div>
+        <p class="text-sm text-gray-500">Halaman data riwayat barang terjual (Transaksi Selesai).</p>
+    </div>
+</body>
+</html>
+
+dashboard.blade.php
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Wonder Shope</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-sans antialiased flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-white border-r border-gray-100 flex flex-col justify-between h-full z-40 shrink-0">
+        <div>
+            <div class="h-16 flex items-center px-6 border-b border-gray-50">
+                <a href="{{ route('admin.dashboard') }}" class="text-xl font-black tracking-wider text-blue-600">
+                    WONDER<span class="text-gray-800 text-base font-bold ml-1">ADMIN</span>
+                </a>
+            </div>
+
+            <nav class="space-y-1.5 px-4 py-6">
+                <a href="{{ route('admin.dashboard') }}" class="flex items-center space-x-3 text-blue-600 bg-blue-50/50 p-3 rounded-xl transition font-bold group">
+                    <i class="fa-solid fa-gauge-high text-lg text-blue-600"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="{{ route('admin.products.index') }}" class="flex items-center space-x-3 text-gray-600 hover:text-blue-600 hover:bg-gray-50 p-3 rounded-xl transition font-semibold group">
+                    <i class="fa-solid fa-box text-lg text-gray-400 group-hover:text-blue-600 transition-colors"></i>
+                    <span>Kelola Katalog</span>
+                </a>
+
+                <a href="{{ route('admin.terjual.index') }}" class="flex items-center space-x-3 text-gray-600 hover:text-blue-600 hover:bg-gray-50 p-3 rounded-xl transition font-semibold group">
+                    <i class="fa-solid fa-cart-shopping text-lg text-gray-400 group-hover:text-blue-600 transition-colors"></i>
+                    <span>Barang Terjual</span>
+                </a>
+
+                <a href="{{ route('admin.retur.index') }}" class="flex items-center space-x-3 text-gray-600 hover:text-red-600 hover:bg-gray-50 p-3 rounded-xl transition font-semibold group">
+                    <i class="fa-solid fa-arrow-rotate-left text-lg text-gray-400 group-hover:text-red-600 transition-colors"></i>
+                    <span>Barang Retur</span>
+                </a>
+            </nav>
+        </div>
+
+        <div class="p-4 border-t border-gray-50">
+            <a href="{{ route('home') }}" class="flex items-center justify-center space-x-2 w-full bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-3 px-4 rounded-xl transition text-sm shadow-sm border border-gray-200/50">
+                <i class="fa-solid fa-store text-base text-gray-500"></i>
+                <span>Keluar ke Toko</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
+        
+        <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-8 shrink-0">
+            <div class="flex items-center space-x-2">
+                <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">Ringkasan Bisnis</h1>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="text-right">
+                    <p class="text-sm font-bold text-gray-900">{{ Auth::user()->name ?? 'Administrator' }}</p>
+                    <p class="text-[11px] font-semibold text-green-600 uppercase tracking-wider bg-green-50 px-2 py-0.5 rounded-full inline-block">Online</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-blue-600 text-white font-black flex items-center justify-center text-sm shadow-sm border border-blue-100">
+                    {{ strtoupper(substr(Auth::user()->name ?? 'A', 0, 1)) }}
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8">
+            
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 text-white mb-8 shadow-md relative overflow-hidden">
+                <div class="relative z-10">
+                    <h2 class="text-2xl font-black tracking-tight">Selamat Datang di Wonder Shope Admin Panel!</h2>
+                    <p class="text-sm text-blue-100 mt-1 max-w-xl">Kelola data produk, pantau performa grafik penjualan harian, dan tangani retur pelanggan secara real-time di sini.</p>
+                </div>
+                <i class="fa-solid fa-chart-line absolute -right-6 -bottom-6 text-9xl text-white/10 rotate-12"></i>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Omset</p>
+                        <h3 class="text-2xl font-black text-gray-900">Rp {{ number_format($totalOmset ?? 0, 0, ',', '.') }}</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center text-xl shadow-sm">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                </div>
+
+                <a href="{{ route('admin.terjual.index') }}" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md hover:border-blue-400 transition-all duration-200 group cursor-pointer">
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 group-hover:text-blue-600 uppercase tracking-wider mb-1 transition-colors">Barang Terjual</p>
+                        <h3 class="text-2xl font-black text-gray-900">{{ $totalTerjual ?? 0 }} <span class="text-sm text-gray-400 font-normal">Pcs</span></h3>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                    </div>
+                </a>
+
+                <a href="{{ route('admin.retur.index') }}" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md hover:border-red-400 transition-all duration-200 group cursor-pointer">
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 group-hover:text-red-600 uppercase tracking-wider mb-1 transition-colors">Barang Retur</p>
+                        <h3 class="text-2xl font-black text-gray-900">{{ $totalRetur ?? 0 }} <span class="text-sm text-gray-400 font-normal">Kasus</span></h3>
+                    </div>
+                    <div class="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center text-xl group-hover:bg-red-600 group-hover:text-white transition-all shadow-sm">
+                        <i class="fa-solid fa-arrow-rotate-left"></i>
+                    </div>
+                </a>
+
+                <a href="{{ route('admin.products.index') }}" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md hover:border-purple-400 transition-all duration-200 group cursor-pointer">
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 group-hover:text-purple-600 uppercase tracking-wider mb-1 transition-colors">Katalog Aktif</p>
+                        <h3 class="text-2xl font-black text-gray-900">{{ $totalProduk ?? 0 }} <span class="text-sm text-gray-400 font-normal">Item</span></h3>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-xl group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm">
+                        <i class="fa-solid fa-box"></i>
+                    </div>
+                </a>
+
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <h3 class="text-base font-bold text-gray-900 mb-2">Sistem Informasi Penjualan Real-Time</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">Gunakan menu navigasi di sebelah kiri atau klik langsung kotak ringkasan indikator di atas untuk melihat detail rincian riwayat transaksi komparatif secara mendalam.</p>
+            </div>
+
+        </div>
+    </main>
+
+</body>
+</html>
+
+auth
+confirm-password.blade.php
+<x-guest-layout>
+    <div class="mb-4 text-sm text-gray-600">
+        {{ __('This is a secure area of the application. Please confirm your password before continuing.') }}
+    </div>
+
+    <form method="POST" action="{{ route('password.confirm') }}">
+        @csrf
+
+        <!-- Password -->
+        <div>
+            <x-input-label for="password" :value="__('Password')" />
+
+            <x-text-input id="password" class="block mt-1 w-full"
+                            type="password"
+                            name="password"
+                            required autocomplete="current-password" />
+
+            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+        </div>
+
+        <div class="flex justify-end mt-4">
+            <x-primary-button>
+                {{ __('Confirm') }}
+            </x-primary-button>
+        </div>
+    </form>
+</x-guest-layout>
+
+
+forgot-password.blade.php
+<x-guest-layout>
+    <div class="mb-4 text-sm text-gray-600">
+        {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
+    </div>
+
+    <!-- Session Status -->
+    <x-auth-session-status class="mb-4" :status="session('status')" />
+
+    <form method="POST" action="{{ route('password.email') }}">
+        @csrf
+
+        <!-- Email Address -->
+        <div>
+            <x-input-label for="email" :value="__('Email')" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus />
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        </div>
+
+        <div class="flex items-center justify-end mt-4">
+            <x-primary-button>
+                {{ __('Email Password Reset Link') }}
+            </x-primary-button>
+        </div>
+    </form>
+</x-guest-layout>
+
+
+login.blade.php
+<x-guest-layout>
+    <!-- Session Status -->
+    <x-auth-session-status class="mb-4" :status="session('status')" />
+
+    <form method="POST" action="{{ route('login') }}">
+        @csrf
+
+        <!-- Email Address -->
+        <div>
+            <x-input-label for="email" :value="__('Email')" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        </div>
+
+        <!-- Password -->
+        <div class="mt-4">
+            <x-input-label for="password" :value="__('Password')" />
+
+            <x-text-input id="password" class="block mt-1 w-full"
+                            type="password"
+                            name="password"
+                            required autocomplete="current-password" />
+
+            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+        </div>
+
+        <!-- Remember Me -->
+        <div class="block mt-4">
+            <label for="remember_me" class="inline-flex items-center">
+                <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
+                <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
+            </label>
+        </div>
+
+        <div class="flex items-center justify-end mt-4">
+            @if (Route::has('password.request'))
+                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
+                    {{ __('Forgot your password?') }}
+                </a>
+            @endif
+
+            <x-primary-button class="ms-3">
+                {{ __('Log in') }}
+            </x-primary-button>
+        </div>
+    </form>
+</x-guest-layout>
+
+
+register.blade.php
+<x-guest-layout>
+    <form method="POST" action="{{ route('register') }}">
+        @csrf
+
+        <!-- Name -->
+        <div>
+            <x-input-label for="name" :value="__('Name')" />
+            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
+            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+        </div>
+
+        <!-- Email Address -->
+        <div class="mt-4">
+            <x-input-label for="email" :value="__('Email')" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        </div>
+
+        <!-- Password -->
+        <div class="mt-4">
+            <x-input-label for="password" :value="__('Password')" />
+
+            <x-text-input id="password" class="block mt-1 w-full"
+                            type="password"
+                            name="password"
+                            required autocomplete="new-password" />
+
+            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="mt-4">
+            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
+
+            <x-text-input id="password_confirmation" class="block mt-1 w-full"
+                            type="password"
+                            name="password_confirmation" required autocomplete="new-password" />
+
+            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+        </div>
+
+        <div class="flex items-center justify-end mt-4">
+            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
+                {{ __('Already registered?') }}
+            </a>
+
+            <x-primary-button class="ms-4">
+                {{ __('Register') }}
+            </x-primary-button>
+        </div>
+    </form>
+</x-guest-layout>
+
+
+reset-password.blade.php
+<x-guest-layout>
+    <form method="POST" action="{{ route('password.store') }}">
+        @csrf
+
+        <!-- Password Reset Token -->
+        <input type="hidden" name="token" value="{{ $request->route('token') }}">
+
+        <!-- Email Address -->
+        <div>
+            <x-input-label for="email" :value="__('Email')" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $request->email)" required autofocus autocomplete="username" />
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        </div>
+
+        <!-- Password -->
+        <div class="mt-4">
+            <x-input-label for="password" :value="__('Password')" />
+            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="new-password" />
+            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="mt-4">
+            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
+
+            <x-text-input id="password_confirmation" class="block mt-1 w-full"
+                                type="password"
+                                name="password_confirmation" required autocomplete="new-password" />
+
+            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+        </div>
+
+        <div class="flex items-center justify-end mt-4">
+            <x-primary-button>
+                {{ __('Reset Password') }}
+            </x-primary-button>
+        </div>
+    </form>
+</x-guest-layout>
+
+
+verify-email.blade.php
+<x-guest-layout>
+    <div class="mb-4 text-sm text-gray-600">
+        {{ __('Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.') }}
+    </div>
+
+    @if (session('status') == 'verification-link-sent')
+        <div class="mb-4 font-medium text-sm text-green-600">
+            {{ __('A new verification link has been sent to the email address you provided during registration.') }}
+        </div>
+    @endif
+
+    <div class="mt-4 flex items-center justify-between">
+        <form method="POST" action="{{ route('verification.send') }}">
+            @csrf
+
+            <div>
+                <x-primary-button>
+                    {{ __('Resend Verification Email') }}
+                </x-primary-button>
+            </div>
+        </form>
+
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+
+            <button type="submit" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                {{ __('Log Out') }}
+            </button>
+        </form>
+    </div>
+</x-guest-layout>
+
+
+
+cart
+index.blade.php
+<h1>HALO INI TES APAKAH BERUBAH</h1>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Katalog Gadget - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 py-12 px-4 font-sans antialiased">
+
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+        
+        <div class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-black text-gray-900">KELOLA KATALOG GADGET</h1>
+                <p class="text-sm text-gray-500 mt-1">Daftar perangkat IT yang tersedia di Wonder Shope</p>
+            </div>
+            <a href="{{ route('products.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition shadow-md flex items-center">
+                <i class="fa-solid fa-plus mr-2"></i> Tambah Produk
+            </a>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-gray-100">
+            <table class="w-full text-sm text-left border-collapse">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
+                    <tr>
+                        <th class="px-6 py-4 font-extrabold">Nama Produk</th>
+                        <th class="px-6 py-4 font-extrabold">Harga</th>
+                        <th class="px-6 py-4 font-extrabold text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 bg-white">
+                    @foreach($products as $product)
+                    <tr class="hover:bg-gray-50/75 transition">
+                        <td class="px-6 py-4 font-bold text-gray-950">{{ $product->name }}</td>
+                        <td class="px-6 py-4 text-gray-600 font-medium">
+                            Rp {{ number_format($product->base_price, 0, ',', '.') }}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <a href="{{ route('products.edit', $product->id) }}" class="text-blue-600 hover:text-blue-800 font-bold inline-flex items-center gap-1">
+                                <i class="fa-solid fa-pen-to-square text-xs"></i> Edit
+                            </a>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+
+</body>
+</html>
+

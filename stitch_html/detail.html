@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Wonder Shope | Product Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-highest": "#323537",
+                    "surface-container-high": "#272a2c",
+                    "on-primary-container": "#00285b",
+                    "secondary-fixed": "#63f7ff",
+                    "inverse-primary": "#005bbf",
+                    "on-error": "#690005",
+                    "surface-tint": "#acc7ff",
+                    "outline": "#8c909e",
+                    "on-background": "#e0e3e5",
+                    "surface-container-lowest": "#0b0f10",
+                    "tertiary-container": "#8c90a4",
+                    "on-secondary-container": "#006c71",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "tertiary": "#c2c6db",
+                    "surface": "#101415",
+                    "surface-bright": "#363a3b",
+                    "secondary-container": "#00f4fe",
+                    "tertiary-fixed": "#dee1f7",
+                    "on-error-container": "#ffdad6",
+                    "outline-variant": "#424753",
+                    "on-secondary-fixed": "#002021",
+                    "background": "#101415",
+                    "surface-dim": "#101415",
+                    "on-primary": "#002f68",
+                    "surface-container": "#1d2022",
+                    "primary-fixed-dim": "#acc7ff",
+                    "secondary-fixed-dim": "#00dce5",
+                    "surface-variant": "#323537",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-surface-variant": "#c2c6d5",
+                    "secondary": "#e6feff",
+                    "on-surface": "#e0e3e5",
+                    "inverse-on-surface": "#2d3133",
+                    "on-primary-fixed": "#001a40",
+                    "on-secondary": "#003739",
+                    "error-container": "#93000a",
+                    "on-primary-fixed-variant": "#004492",
+                    "on-secondary-fixed-variant": "#004f53",
+                    "primary": "#acc7ff",
+                    "surface-container-low": "#191c1e",
+                    "on-tertiary-container": "#242939",
+                    "tertiary-fixed-dim": "#c2c6db",
+                    "primary-container": "#508ff8",
+                    "inverse-surface": "#e0e3e5",
+                    "error": "#ffb4ab",
+                    "on-tertiary": "#2b3040",
+                    "primary-fixed": "#d7e2ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "8px",
+                    "container-max": "1440px",
+                    "margin-mobile": "20px",
+                    "gutter": "24px",
+                    "margin-desktop": "80px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "display-xl": ["Outfit"],
+                    "headline-lg-mobile": ["Outfit"],
+                    "headline-md": ["Outfit"],
+                    "label-md": ["Inter"],
+                    "headline-lg": ["Outfit"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-xl": ["64px", {"lineHeight": "72px", "letterSpacing": "-0.02em", "fontWeight": "900"}],
+                    "headline-lg-mobile": ["32px", {"lineHeight": "40px", "fontWeight": "800"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.01em", "fontWeight": "800"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #101415;
+            color: #e0e3e5;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glow-primary {
+            box-shadow: 0 0 40px rgba(172, 199, 255, 0.15);
+        }
+
+        .cyber-button {
+            background: linear-gradient(90deg, #4F8EF7 0%, #00F5FF 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .cyber-button:hover {
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .thumbnail-active {
+            border: 2px solid #acc7ff;
+            box-shadow: 0 0 10px rgba(172, 199, 255, 0.3);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(172, 199, 255, 0.2);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md selection:bg-primary/30">
+<!-- TopNavBar -->
+<nav class="sticky top-0 flex items-center justify-between px-8 md:px-margin-desktop py-4 w-full bg-surface/80 backdrop-blur-xl dark:bg-surface/80 z-50 border-b border-white/10 shadow-[0_0_40px_rgba(172,199,255,0.15)]">
+<div class="flex items-center gap-8">
+<span class="font-display-xl text-headline-md bg-gradient-to-r from-primary-container to-secondary-container bg-clip-text text-transparent">Wonder Shope</span>
+<div class="hidden md:flex gap-6">
+<a class="font-label-md text-label-md text-primary border-b-2 border-primary pb-1" href="#">Catalog</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">Offers</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">Support</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden lg:flex items-center bg-surface-container-highest/50 rounded-full px-4 py-1.5 border border-white/5">
+<span class="material-symbols-outlined text-on-surface-variant text-sm mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-label-md w-48" placeholder="Search gadgets..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-on-surface p-2 hover:bg-white/5 rounded-full transition-all active:scale-95">shopping_cart</button>
+<button class="material-symbols-outlined text-on-surface p-2 hover:bg-white/5 rounded-full transition-all active:scale-95">account_circle</button>
+</div>
+</nav>
+<main class="min-h-screen pt-8 pb-24 px-4 md:px-margin-desktop max-w-container-max mx-auto">
+<!-- Breadcrumb -->
+<nav class="flex items-center gap-2 mb-8 text-on-surface-variant">
+<a class="hover:text-primary transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-base">home</span>
+<span class="font-label-md text-label-md">Home</span>
+</a>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<a class="hover:text-primary transition-colors font-label-md text-label-md" href="#">Laptops</a>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-on-surface font-label-md text-label-md">Hyperion X-1 Pro</span>
+</nav>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+<!-- Left: Product Image & Gallery -->
+<div class="lg:col-span-7 flex flex-col gap-6">
+<div class="relative group aspect-square rounded-xl overflow-hidden glass-panel flex items-center justify-center p-8">
+<img class="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" data-alt="A professional studio product shot of a futuristic matte black laptop with glowing cyan keyboard backlighting. The laptop is floating slightly in mid-air against a deep navy background with soft atmospheric lighting. High-end hardware details like ultra-thin bezels and a metallic chassis are highlighted by sharp blue rim lighting. Cinematic, sleek, and high-tech premium electronics aesthetic." id="main-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7GSjDwJCEwySxFcv4BPrGUD_nZpM95hDS8khUNMysu6x7SkXemBUU75IN0CgZ2oPqGNfIiCEio0OntkYENb86oDpy9mkETGcYvz4pegElsd5SQ648qj0LK1iSSr1IDyLkDJy6Z-K9InFZfnABfFLDItqLxYZc_nGpu27G5GshNg2mEujLFkf26UMssA8H8RsjSHoyhridskbO3JdASMCnqonMteFZtd6p3I03G4GqzbuIzXW3K7Aj5XxQjbVbsYsdG1aEihoMTsNn"/>
+<div class="absolute top-4 left-4">
+<span class="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full font-label-md text-label-md backdrop-blur-md">Premium Tier</span>
+</div>
+</div>
+<div class="grid grid-cols-5 gap-4">
+<button class="aspect-square rounded-lg overflow-hidden glass-panel thumbnail-active hover:border-primary transition-all p-2" onclick="changeImage(0)">
+<img class="w-full h-full object-cover" data-alt="Close up shot of a sleek matte black laptop lid with a minimalist glowing blue logo in the center. Atmospheric dark lighting with blue highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrxV9gS1Bbq8dFGM7iX6bbowqoozNk_3CWUtmQ2XlEusm4EukwWC1CYDQ2mJckNFlgQrr5z9MRUkLyr22aNRcXr54F8p2t8sdIIxjMNw4AjQVPZVrQoi8icI2yGZIpbHSZXr8nI0OQ5-oDhHZZa9ek0H-T36R3xY8Kn3EY7i_u0oZf-MteFmEgxgIzQdapPM63_G9nmHYkvKawKv1t2ElFinjoDJy9pmvJmZu8H6jk6QjWHlXkMHqoQI-XNQ-hkgq-P96EoMQmlgq2"/>
+</button>
+<button class="aspect-square rounded-lg overflow-hidden glass-panel hover:border-primary transition-all p-2" onclick="changeImage(1)">
+<img class="w-full h-full object-cover" data-alt="Angled shot of a high-performance laptop showing the thin profile and side ports with a glowing blue power button. Dark premium tech aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsp9gWDsZ5nN_sVAj9tQCPlW39crzGrgxVpbxNz4xzs8akaczewFNDG8gkxy70h1LmvKDwTa81L4j8ojgYpDLt-tmq2NUaSJNrgeF2BsMQX7pocXHD7VesZpmHdu3lNFmuLeMRZVvqp5jg3Rrff0UJgtywc3ppGjija4hpfWwVYNPDkpE5WF6A1lE8WwTjwl67yMejCL3VnnEF6fT8h3fEKGe5GNTEp5oGbRAGcDr88o47Yty0yK72kX5DWovkVaJgEEY1zbYm2lSi"/>
+</button>
+<button class="aspect-square rounded-lg overflow-hidden glass-panel hover:border-primary transition-all p-2" onclick="changeImage(2)">
+<img class="w-full h-full object-cover" data-alt="Close up of a backlit mechanical keyboard on a laptop with vibrant cyan and purple lighting. Detailed focus on the key texture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJUc2NmbuafZurisYOSDChjN761Qamx_GknN6JVGqyDQYhRcFWA6gRcw8zNrEb3WlH2ueGye38BwTDxY_MNj-lO-vKXFP3EAac7nVevVV1yN9twe-kC6kP2VcYtOf8DgHD8nme7uaU7f48C0yMgIR-_9LzQ0WasMqpsdUlaDm_v6mOHQIzvwOZ58EMfzXbdWdpDHWRsSGdSXrlz6_aCt8Vh_EgztT3jYbqJ3up1EDKAKbjWH9efkgAnuDr4H8NYn5l2rt4u0WoxnaT"/>
+</button>
+<button class="aspect-square rounded-lg overflow-hidden glass-panel hover:border-primary transition-all p-2" onclick="changeImage(3)">
+<img class="w-full h-full object-cover" data-alt="View of the laptop hinge and cooling vents with a subtle blue inner glow. Technical detail shot of high-end cooling system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPwiARyZsLxamZAMKCk1blt-FOfYx4r-tlMGAu6YJ4oPTxZmmvN3BSlJ5HpXZ9et-DmkRPLhjiUiB8MD6DbpkKH-oDXXcmkYDoNhUBOQwqNLU9PHsFOkty_XJCtkVpdWN_IE_HLVe0212rpQyqDj21tN8afWYjN04djwSmHFEjIcEZCeoD6lR1Og3Mjiyjxy7iUNdZCzld4_nstZHnCttN41JOhIYvRLjOitwONo90ARM0akc-JfAEqjuKlYkQ6nH27UD8BBEaL3AR"/>
+</button>
+<button class="aspect-square rounded-lg overflow-hidden glass-panel hover:border-primary transition-all p-2" onclick="changeImage(4)">
+<img class="w-full h-full object-cover" data-alt="Top-down view of a sleek tech setup featuring a laptop and a matching minimalist mouse on a dark textured desk." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAk4VvgporRLP2EcCO6KRvgRF0gk3HnqCe6-f3Rvj_N-j2s1Cd--3_40AYxJ5gU4nf7RoyBMFvYLX9w2YZRj2Jh_FK-TIVRN9E8HVfoeDEXRBnARX-xeLyPPm8ijcK5mCdGSjgfwp4D_4LX852cdrr_v4JgCeLpjNxTBy-YVnqbhN1-imM9a3C3MV2xabsE4KkKKYkw6s6nfufa8n9vHOJU2SPeFn7uhqZ5pAHumYCdU7ahMrcOU_9zolXQ1W3SzEpIDUdfQtngcZaw"/>
+</button>
+</div>
+</div>
+<!-- Right: Product Info Container -->
+<div class="lg:col-span-5">
+<div class="glass-panel rounded-xl p-8 sticky top-28 glow-primary">
+<div class="flex justify-between items-start mb-2">
+<span class="text-secondary-fixed-dim font-label-md text-label-md tracking-widest uppercase">Wonder Series</span>
+<div class="flex items-center gap-1 text-secondary-fixed-dim">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-md text-label-md">4.9 (128 reviews)</span>
+</div>
+</div>
+<h1 class="font-headline-lg text-headline-lg mb-4 text-on-surface">Hyperion X-1 Pro</h1>
+<div class="flex items-center gap-4 mb-6">
+<span class="font-headline-md text-headline-md text-primary">Rp 24.999.000</span>
+<span class="font-body-md text-body-md line-through text-on-surface-variant">Rp 27.500.000</span>
+<span class="bg-error-container/20 text-error px-2 py-0.5 rounded font-label-md text-label-md border border-error/20">-10%</span>
+</div>
+<p class="text-on-surface-variant mb-8 font-body-md leading-relaxed">
+                        Experience the pinnacle of portable performance. The Hyperion X-1 Pro features an OLED Quantum display and the latest neural processing unit for seamless AI workflows and cinematic gaming.
+                    </p>
+<!-- Variants: Specs -->
+<div class="mb-8">
+<label class="block font-label-md text-label-md text-on-surface mb-4">Memory Configuration</label>
+<div class="flex flex-wrap gap-3">
+<button class="px-4 py-2 rounded-lg border border-primary bg-primary/10 text-primary font-label-md text-label-md transition-all">32GB RAM / 1TB SSD</button>
+<button class="px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-on-surface-variant font-label-md text-label-md hover:border-primary/50 transition-all">64GB RAM / 2TB SSD</button>
+<button class="px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-on-surface-variant font-label-md text-label-md hover:border-primary/50 transition-all">16GB RAM / 512GB SSD</button>
+</div>
+</div>
+<!-- Variants: Colors -->
+<div class="mb-8">
+<label class="block font-label-md text-label-md text-on-surface mb-4">Finish</label>
+<div class="flex gap-4">
+<button class="w-8 h-8 rounded-full bg-[#0a0a0a] border-2 border-primary shadow-[0_0_8px_rgba(172,199,255,0.5)]"></button>
+<button class="w-8 h-8 rounded-full bg-[#3d3d3d] border-2 border-transparent hover:border-white/20 transition-all"></button>
+<button class="w-8 h-8 rounded-full bg-[#a0a0a0] border-2 border-transparent hover:border-white/20 transition-all"></button>
+</div>
+</div>
+<!-- Availability -->
+<div class="flex items-center gap-2 mb-8">
+<div class="w-2 h-2 rounded-full bg-secondary-fixed shadow-[0_0_8px_rgba(0,220,229,0.8)]"></div>
+<span class="font-label-md text-label-md text-secondary-fixed-dim">Stock: 12 Units Available</span>
+</div>
+<!-- Action Area -->
+<div class="flex flex-col sm:flex-row gap-4">
+<div class="flex items-center bg-surface-container-highest rounded-lg border border-white/10 px-2 h-12">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<input class="w-12 bg-transparent border-none text-center focus:ring-0 font-bold text-on-surface" type="number" value="1"/>
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<button class="flex-1 cyber-button h-12 rounded-lg flex items-center justify-center gap-2 text-on-primary-fixed font-label-md text-label-md uppercase tracking-widest font-bold">
+<span class="material-symbols-outlined">shopping_cart</span>
+                            Tambah ke Keranjang
+                        </button>
+</div>
+<!-- Extra Perks -->
+<div class="mt-8 grid grid-cols-2 gap-4 pt-8 border-t border-white/10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">verified_user</span>
+<div>
+<p class="text-[12px] font-bold text-on-surface uppercase tracking-tighter">Warranty</p>
+<p class="text-[12px] text-on-surface-variant">2 Year Global</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">local_shipping</span>
+<div>
+<p class="text-[12px] font-bold text-on-surface uppercase tracking-tighter">Delivery</p>
+<p class="text-[12px] text-on-surface-variant">Free Express</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Technical Specifications Section -->
+<section class="mt-24">
+<h2 class="font-headline-md text-headline-md mb-12 text-center">Technical Specifications</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="glass-panel p-6 rounded-xl border-l-4 border-primary">
+<span class="material-symbols-outlined text-primary mb-4" style="font-size: 32px;">memory</span>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">Processor</h3>
+<p class="text-on-surface-variant text-sm">Hyper-Core Quantum i9, 16-Core, up to 5.8GHz with Integrated AI Accelerator.</p>
+</div>
+<div class="glass-panel p-6 rounded-xl border-l-4 border-secondary-fixed-dim">
+<span class="material-symbols-outlined text-secondary-fixed-dim mb-4" style="font-size: 32px;">monitor</span>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">Display</h3>
+<p class="text-on-surface-variant text-sm">16" 4K OLED Pro, 144Hz Refresh, 1000 nits Peak Brightness, 100% DCI-P3.</p>
+</div>
+<div class="glass-panel p-6 rounded-xl border-l-4 border-tertiary">
+<span class="material-symbols-outlined text-tertiary mb-4" style="font-size: 32px;">battery_charging_full</span>
+<h3 class="font-label-md text-label-md text-on-surface mb-2">Battery</h3>
+<p class="text-on-surface-variant text-sm">99Wh High-Density Cell, 100W GaN Charging (50% in 20 minutes).</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest border-t border-white/5 py-12 px-8 md:px-margin-desktop flex flex-col items-center gap-8 w-full mt-auto">
+<div class="flex flex-col md:flex-row items-center justify-between w-full max-w-container-max gap-8">
+<span class="font-display-xl text-headline-md text-on-surface">Wonder Shope</span>
+<div class="flex flex-wrap justify-center gap-8">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Contact Us</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Shipping Info</a>
+</div>
+<div class="flex gap-4">
+<a class="p-2 glass-panel rounded-full hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">
+<span class="material-symbols-outlined">public</span>
+</a>
+<a class="p-2 glass-panel rounded-full hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">
+<span class="material-symbols-outlined">language</span>
+</a>
+</div>
+</div>
+<p class="text-on-surface-variant font-label-md text-label-md opacity-60">© 2024 Wonder Shope Premium Electronics. All rights reserved.</p>
+</footer>
+<script>
+        function changeImage(index) {
+            // This is a mockup function for the UI demo
+            const thumbnails = document.querySelectorAll('.grid button');
+            thumbnails.forEach((thumb, i) => {
+                if(i === index) {
+                    thumb.classList.add('thumbnail-active');
+                } else {
+                    thumb.classList.remove('thumbnail-active');
+                }
+            });
+            
+            // In a real app, you would swap the main image src here
+            const mainImg = document.getElementById('main-image');
+            // We maintain the placeholder behavior as per instructions
+            mainImg.style.opacity = '0.5';
+            setTimeout(() => {
+                mainImg.style.opacity = '1';
+            }, 300);
+        }
+
+        // Simple interaction for quantity input
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            const container = input.parentElement;
+            const minusBtn = container.querySelector('button:first-child');
+            const plusBtn = container.querySelector('button:last-child');
+
+            minusBtn.addEventListener('click', () => {
+                if(parseInt(input.value) > 1) input.value = parseInt(input.value) - 1;
+            });
+            plusBtn.addEventListener('click', () => {
+                input.value = parseInt(input.value) + 1;
+            });
+        });
+    </script>
+</body></html>

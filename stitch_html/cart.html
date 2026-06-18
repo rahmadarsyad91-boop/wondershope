@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Wonder Shope | Shopping Cart</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-highest": "#323537",
+                    "surface-container-high": "#272a2c",
+                    "on-primary-container": "#00285b",
+                    "secondary-fixed": "#63f7ff",
+                    "inverse-primary": "#005bbf",
+                    "on-error": "#690005",
+                    "surface-tint": "#acc7ff",
+                    "outline": "#8c909e",
+                    "on-background": "#e0e3e5",
+                    "surface-container-lowest": "#0b0f10",
+                    "tertiary-container": "#8c90a4",
+                    "on-secondary-container": "#006c71",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "tertiary": "#c2c6db",
+                    "surface": "#101415",
+                    "surface-bright": "#363a3b",
+                    "secondary-container": "#00f4fe",
+                    "tertiary-fixed": "#dee1f7",
+                    "on-error-container": "#ffdad6",
+                    "outline-variant": "#424753",
+                    "on-secondary-fixed": "#002021",
+                    "background": "#101415",
+                    "surface-dim": "#101415",
+                    "on-primary": "#002f68",
+                    "surface-container": "#1d2022",
+                    "primary-fixed-dim": "#acc7ff",
+                    "secondary-fixed-dim": "#00dce5",
+                    "surface-variant": "#323537",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-surface-variant": "#c2c6d5",
+                    "secondary": "#e6feff",
+                    "on-surface": "#e0e3e5",
+                    "inverse-on-surface": "#2d3133",
+                    "on-primary-fixed": "#001a40",
+                    "on-secondary": "#003739",
+                    "error-container": "#93000a",
+                    "on-primary-fixed-variant": "#004492",
+                    "on-secondary-fixed-variant": "#004f53",
+                    "primary": "#acc7ff",
+                    "surface-container-low": "#191c1e",
+                    "on-tertiary-container": "#242939",
+                    "tertiary-fixed-dim": "#c2c6db",
+                    "primary-container": "#508ff8",
+                    "inverse-surface": "#e0e3e5",
+                    "error": "#ffb4ab",
+                    "on-tertiary": "#2b3040",
+                    "primary-fixed": "#d7e2ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "8px",
+                    "container-max": "1440px",
+                    "margin-mobile": "20px",
+                    "gutter": "24px",
+                    "margin-desktop": "80px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "display-xl": ["Outfit"],
+                    "headline-lg-mobile": ["Outfit"],
+                    "headline-md": ["Outfit"],
+                    "label-md": ["Inter"],
+                    "headline-lg": ["Outfit"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-xl": ["64px", {"lineHeight": "72px", "letterSpacing": "-0.02em", "fontWeight": "900"}],
+                    "headline-lg-mobile": ["32px", {"lineHeight": "40px", "fontWeight": "800"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.01em", "fontWeight": "800"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-glow {
+            box-shadow: 0 0 40px rgba(172, 199, 255, 0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #508ff8 0%, #00f4fe 100%);
+            box-shadow: 0 4px 20px rgba(80, 143, 248, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 244, 254, 0.4);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #508ff8;
+            border-radius: 10px;
+        }
+        body {
+            background-color: #101415;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(80, 143, 248, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(0, 244, 254, 0.05) 0%, transparent 50%);
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface min-h-screen flex flex-col selection:bg-primary/30">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-[0_0_40px_rgba(172,199,255,0.15)]">
+<nav class="flex items-center justify-between px-margin-desktop py-4 w-full">
+<div class="flex items-center gap-8">
+<a class="font-display-xl text-headline-md bg-gradient-to-r from-primary-container to-secondary-container bg-clip-text text-transparent" href="#">
+                    Wonder Shope
+                </a>
+<div class="hidden md:flex gap-6">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">Catalog</a>
+<a class="font-label-md text-label-md text-primary border-b-2 border-primary pb-1" href="#">Cart</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">Deals</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-on-surface transition-all active:scale-95">shopping_cart</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-on-surface transition-all active:scale-95">account_circle</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-on-surface transition-all active:scale-95">logout</button>
+</div>
+</nav>
+</header>
+<main class="flex-grow pt-32 pb-20 px-margin-desktop max-w-[1440px] mx-auto w-full">
+<div class="flex flex-col lg:flex-row gap-gutter">
+<!-- Shopping Cart Content -->
+<div class="flex-grow">
+<div class="flex items-center justify-between mb-8">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Keranjang Belanja</h1>
+<span class="font-label-md text-label-md text-primary-fixed-dim bg-primary/10 px-4 py-1 rounded-full">3 Item</span>
+</div>
+<!-- Desktop Table View -->
+<div class="glass-card rounded-xl overflow-hidden glass-glow hidden md:block">
+<table class="w-full text-left border-collapse">
+<thead class="bg-white/5">
+<tr>
+<th class="p-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Produk</th>
+<th class="p-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Harga</th>
+<th class="p-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Jumlah</th>
+<th class="p-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Subtotal</th>
+<th class="p-6"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<!-- Item 1 -->
+<tr class="group hover:bg-white/[0.02] transition-colors">
+<td class="p-6">
+<div class="flex items-center gap-4">
+<div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 glass-card">
+<img class="w-full h-full object-cover" data-alt="Close up high-end studio photography of a futuristic ergonomic gaming mouse with neon cyan accents and carbon fiber texture. Soft cinematic blue lighting on a dark reflective surface. Premium electronics aesthetic with sharp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlkdfZmVu7gOGfD4KnvSb0P5w-Fa63S76VnUG4julqvNW4F6ob60E2sCjOHYDKKW52XI6dNULBiInMUTraH2fa1h2KVA631ack-GCEGhA-sDzkphIDQepD-B5mFtpevebtHZCXQ35yvaC5Up82t0cX2t9l2FIZcJoRyRurC2GPUWwWXlM6U6vhRGwbKYuTpSh86hTVOj1ljoYYTHTOnwF2HOe7ad9TkzjaeT0ojYPvmRDbQ04BiqsLf3ajssoKiJ6N5tXHDzz1FJf2"/>
+</div>
+<div>
+<h3 class="font-headline-md text-body-lg text-on-surface">Nexus Elite Mouse</h3>
+<p class="text-on-surface-variant text-sm">Variant: Midnight Cobalt</p>
+</div>
+</div>
+</td>
+<td class="p-6 font-label-md text-label-md">Rp 1.299.000</td>
+<td class="p-6">
+<div class="flex items-center border border-white/10 rounded-lg w-fit overflow-hidden glass-card">
+<button class="p-2 hover:bg-white/5 transition-colors active:scale-90"><span class="material-symbols-outlined text-sm">remove</span></button>
+<span class="px-4 font-label-md">1</span>
+<button class="p-2 hover:bg-white/5 transition-colors active:scale-90"><span class="material-symbols-outlined text-sm">add</span></button>
+</div>
+</td>
+<td class="p-6 font-headline-md text-body-lg text-right text-secondary-fixed-dim">Rp 1.299.000</td>
+<td class="p-6 text-right">
+<button class="text-on-surface-variant hover:text-error transition-colors p-2 active:scale-90">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</td>
+</tr>
+<!-- Item 2 -->
+<tr class="group hover:bg-white/[0.02] transition-colors">
+<td class="p-6">
+<div class="flex items-center gap-4">
+<div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 glass-card">
+<img class="w-full h-full object-cover" data-alt="Sleek wireless noise-canceling headphones with a metallic matte finish and plush leather earcups. Dramatic top-down lighting creating soft shadows. High-tech premium audio equipment in a futuristic dark setting with cyan light reflections." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBA5Lo7BTheV5Q5I0Rw63vCY5wvTfJDKWDDnWVqsVgTTwNl14KXgDIIl9E8j0Sc5zf-HArCeI2n1bOXQclJMVk6_xR79yeDKXXVhUS_b2OuU-sA75Q8YPd4XzGx1X9LeNMCjR1D_GbdKHxuFK2CNEWSBgQfTxfTcMREf8pXVz33IX3j87GxUyyq5rl0vN6kN6r62AKmEjk9VPkIuLogcYmrtnS5sEP8I3RnjSdqdFU8Igik_vP0wRMMcRUbg2lLKv8wQb_NxFyzX3et"/>
+</div>
+<div>
+<h3 class="font-headline-md text-body-lg text-on-surface">Aura Sound ANC</h3>
+<p class="text-on-surface-variant text-sm">Variant: Silver Chrome</p>
+</div>
+</div>
+</td>
+<td class="p-6 font-label-md text-label-md">Rp 3.450.000</td>
+<td class="p-6">
+<div class="flex items-center border border-white/10 rounded-lg w-fit overflow-hidden glass-card">
+<button class="p-2 hover:bg-white/5 transition-colors active:scale-90"><span class="material-symbols-outlined text-sm">remove</span></button>
+<span class="px-4 font-label-md">1</span>
+<button class="p-2 hover:bg-white/5 transition-colors active:scale-90"><span class="material-symbols-outlined text-sm">add</span></button>
+</div>
+</td>
+<td class="p-6 font-headline-md text-body-lg text-right text-secondary-fixed-dim">Rp 3.450.000</td>
+<td class="p-6 text-right">
+<button class="text-on-surface-variant hover:text-error transition-colors p-2 active:scale-90">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Mobile List View -->
+<div class="md:hidden space-y-4">
+<div class="glass-card p-4 rounded-xl flex flex-col gap-4">
+<div class="flex gap-4">
+<div class="w-24 h-24 rounded-lg overflow-hidden border border-white/10 glass-card flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="High-detail macro shot of a premium mechanical keyboard with translucent keycaps and vivid RGB lighting. Cyberpunk aesthetic with deep shadows and neon accents. Professional studio lighting on a dark background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnuV7HJr5J4UvpGZiAwj7r3uTKGaDdI-kQwU1smWTQ2BgNljI-0C4Gz7rCzUOJNmZY7DltXzQiwtrAcLKsM1dUbk_VEMUDOVn9_NKo8DCZAjT5fpKvEL4tR8_BVmVcJmHUnvLeaa1R-Svo39yWg9Gx-p8p77brMxIV131Z3vRjYiakIQCkgs5Mxlqf7T15Jl9c5jE8rrmmd02dd9ePoiFxJPKd7LW26q7eEKfBJ0c_FMiRhXI65qf5iIg7t6h9BKMpRWH-aXKyAXPz"/>
+</div>
+<div class="flex flex-col justify-between flex-grow">
+<div>
+<h3 class="font-headline-md text-body-md text-on-surface">Nexus Elite Mouse</h3>
+<p class="text-on-surface-variant text-xs">Midnight Cobalt</p>
+</div>
+<p class="font-label-md text-secondary-fixed-dim">Rp 1.299.000</p>
+</div>
+<button class="text-on-surface-variant h-fit p-1"><span class="material-symbols-outlined">delete</span></button>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center border border-white/10 rounded-lg overflow-hidden glass-card h-8">
+<button class="px-2"><span class="material-symbols-outlined text-xs">remove</span></button>
+<span class="px-3 text-sm">1</span>
+<button class="px-2"><span class="material-symbols-outlined text-xs">add</span></button>
+</div>
+<p class="font-headline-md text-body-md text-on-surface">Rp 1.299.000</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Order Summary Sidebar -->
+<aside class="w-full lg:w-[400px] shrink-0">
+<div class="glass-card p-8 rounded-xl glass-glow sticky top-32">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-6">Ringkasan Pesanan</h2>
+<div class="space-y-4 mb-8">
+<div class="flex justify-between items-center text-on-surface-variant">
+<span class="font-body-md">Subtotal</span>
+<span class="font-label-md text-on-surface">Rp 4.749.000</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant">
+<span class="font-body-md">Estimasi Pengiriman</span>
+<span class="font-label-md text-on-surface">Rp 45.000</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant border-b border-white/10 pb-4">
+<span class="font-body-md">Diskon</span>
+<span class="font-label-md text-error">- Rp 0</span>
+</div>
+<div class="flex justify-between items-center pt-2">
+<span class="font-headline-md text-body-lg text-on-surface">Total</span>
+<span class="font-display-xl text-headline-md text-secondary-fixed-dim">Rp 4.794.000</span>
+</div>
+</div>
+<div class="space-y-4">
+<button class="btn-primary w-full py-4 rounded-xl font-label-md text-on-primary-fixed uppercase tracking-widest flex items-center justify-center gap-2">
+                            Lanjut ke Pembayaran
+                            <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<a class="block text-center text-on-surface-variant hover:text-primary transition-colors font-label-md text-sm" href="#">Lanjutkan Belanja</a>
+</div>
+<!-- Promo Code -->
+<div class="mt-8 pt-8 border-t border-white/10">
+<p class="font-label-md text-on-surface-variant mb-3">Punya kode promo?</p>
+<div class="flex gap-2">
+<input class="bg-surface-container-lowest border border-white/10 rounded-lg px-4 py-2 flex-grow text-on-surface focus:ring-2 focus:ring-primary outline-none transition-all" placeholder="Masukkan kode" type="text"/>
+<button class="bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-lg font-label-md transition-colors">Terapkan</button>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant w-full mt-auto">
+<div class="flex flex-col items-center gap-6 py-12 px-margin-desktop">
+<div class="font-display-xl text-headline-md text-on-surface">Wonder Shope</div>
+<div class="flex flex-wrap justify-center gap-8">
+<a class="text-on-surface-variant hover:text-primary font-label-md transition-colors" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant hover:text-primary font-label-md transition-colors" href="#">Terms of Service</a>
+<a class="text-on-surface-variant hover:text-primary font-label-md transition-colors" href="#">Contact Us</a>
+<a class="text-on-surface-variant hover:text-primary font-label-md transition-colors" href="#">Shipping Info</a>
+</div>
+<div class="text-on-surface-variant font-body-md text-sm opacity-60">
+                © 2024 Wonder Shope Premium Electronics. All rights reserved.
+            </div>
+</div>
+</footer>
+<!-- Atmosphere/Micro-interaction Script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.addEventListener('mousedown', () => {
+                    btn.classList.add('scale-95');
+                });
+                btn.addEventListener('mouseup', () => {
+                    btn.classList.remove('scale-95');
+                });
+                btn.addEventListener('mouseleave', () => {
+                    btn.classList.remove('scale-95');
+                });
+            });
+
+            // Smooth entrance for cards
+            const mainContent = document.querySelector('main');
+            mainContent.style.opacity = '0';
+            mainContent.style.transform = 'translateY(20px)';
+            mainContent.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
+            
+            setTimeout(() => {
+                mainContent.style.opacity = '1';
+                mainContent.style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
+</body></html>
