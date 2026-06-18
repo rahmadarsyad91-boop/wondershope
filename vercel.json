@@ -22,6 +22,7 @@
   "outputDirectory": "public",
   "env": {
     "APP_ENV": "production",
+    "APP_URL": "https://wondershope-y2k1.vercel.app",
     "APP_DEBUG": "true",
     "CACHE_STORE": "array",
     "SESSION_DRIVER": "cookie",
