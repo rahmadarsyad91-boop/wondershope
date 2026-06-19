@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ProfileController; // Di-import agar tidak eror Class ProfileController does not exist
 use Illuminate\Support\Facades\Route;
+use App\Models\Product;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,6 +20,14 @@ Route::get('/', [ProductController::class, 'index'])->name('home');
 Route::get('/google18e286e402b91425.html', function () {
     return 'google-site-verification: google18e286e402b91425.html';
 });
+
+// Sitemap XML Dinamis
+Route::get('/sitemap.xml', function () {
+    $products = Product::select('slug', 'updated_at')->get();
+    return response()
+        ->view('sitemap', compact('products'))
+        ->header('Content-Type', 'application/xml');
+})->name('sitemap');
 
 // 2. Detail Produk
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('products.show');
