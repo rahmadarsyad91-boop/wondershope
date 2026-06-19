@@ -45,12 +45,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::delete('/product/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
 });
 
-Route::get('/wipe-data-12345', function () {
-    \DB::statement('TRUNCATE TABLE order_items CASCADE;');
-    \DB::statement('TRUNCATE TABLE orders CASCADE;');
-    return 'Database wiped successfully!';
-});
-
 // 4. Keranjang Belanja
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
