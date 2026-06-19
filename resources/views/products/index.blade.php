@@ -43,7 +43,7 @@
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center p-1">
                                 @if($product->image)
-                                    <img src="{{ asset('storage/products/' . $product->image) }}" class="w-full h-full object-contain">
+                                    <img src="{{ filter_var($product->image, FILTER_VALIDATE_URL) ? $product->image : asset('storage/products/' . $product->image) }}" class="w-full h-full object-contain">
                                 @else
                                     <span class="material-symbols-outlined text-on-surface-variant">devices</span>
                                 @endif

@@ -164,11 +164,15 @@
                     <p class="text-[10px] font-label-md text-primary uppercase tracking-widest">{{ Auth::user()->role }}</p>
                 </div>
             </div>
+            <a href="{{ route('home') }}" class="flex items-center gap-3 px-4 py-3 mb-2 rounded-xl font-label-md text-sm text-primary hover:bg-primary/10 border border-transparent transition-all">
+                <span class="material-symbols-outlined text-xl">storefront</span>
+                <span>Ke Halaman Toko</span>
+            </a>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-label-md text-sm text-error hover:bg-error/10 hover:border-error/20 border border-transparent transition-all">
                     <span class="material-symbols-outlined text-xl">logout</span>
-                    <span>Keluar Sistem</span>
+                    <span>Logout (Keluar)</span>
                 </button>
             </form>
         </div>

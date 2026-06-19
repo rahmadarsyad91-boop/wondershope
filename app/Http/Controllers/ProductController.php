@@ -49,17 +49,13 @@ class ProductController extends Controller
             'brand' => 'required',
             'base_price' => 'required|numeric',
             'description' => 'required',
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'image' => 'required|string',
             'variants' => 'required|array|min:1',
             'variants.*.nama_varian' => 'required|string',
             'variants.*.stok' => 'required|integer|min:0',
         ]);
 
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('products', $fileName, 'public');
-        }
+        $fileName = $request->image;
 
         $slug = Str::slug($request->name);
 
@@ -105,7 +101,7 @@ class ProductController extends Controller
             'brand' => 'required',
             'base_price' => 'required|numeric',
             'description' => 'required',
-            'image' => 'sometimes|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'image' => 'sometimes|string',
             'variants' => 'sometimes|array',
             'new_variants' => 'sometimes|array',
         ]);
@@ -113,13 +109,8 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
         $fileName = $product->image;
 
-        if ($request->hasFile('image')) {
-            if ($product->image && Storage::disk('public')->exists('products/' . $product->image)) {
-                Storage::disk('public')->delete('products/' . $product->image);
-            }
-            $file = $request->file('image');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('products', $fileName, 'public');
+        if ($request->filled('image')) {
+            $fileName = $request->image;
         }
 
         // Update data produk utama

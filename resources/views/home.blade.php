@@ -51,7 +51,7 @@
         <div class="product-card glass-card rounded-2xl p-6 flex flex-col group transition-all duration-500 hover:-translate-y-2 relative">
             <div class="product-image-container relative h-48 mb-6 flex items-center justify-center overflow-hidden rounded-xl bg-black/20 p-4">
                 @if($product->image)
-                    <img class="h-full w-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] transition-transform duration-500 group-hover:scale-110" src="{{ asset('storage/products/' . $product->image) }}" alt="{{ $product->name }}"/>
+                    <img class="h-full w-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] transition-transform duration-500 group-hover:scale-110" src="{{ filter_var($product->image, FILTER_VALIDATE_URL) ? $product->image : asset('storage/products/' . $product->image) }}" alt="{{ $product->name }}"/>
                 @else
                     <img class="h-full w-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)] transition-transform duration-500 group-hover:scale-110" src="https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?q=80&w=500" alt="{{ $product->name }}"/>
                 @endif

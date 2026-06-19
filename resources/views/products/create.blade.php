@@ -51,9 +51,14 @@
                 </div>
 
                 <div>
-                    <label class="block font-label-md text-sm text-on-surface mb-2">Foto Produk</label>
-                    <input type="file" name="image" accept="image/*" required
-                           class="w-full px-4 py-3 bg-white/5 rounded-xl border border-white/10 outline-none transition file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 text-on-surface-variant cursor-pointer">
+                    <label class="block font-label-md text-sm text-on-surface mb-2">Link Foto Produk (URL) <span class="text-error">*</span></label>
+                    <div class="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                        <div class="flex-1">
+                            <input type="text" name="image" required placeholder="Contoh: https://imgur.com/gambar.jpg"
+                                   class="w-full bg-surface-container-lowest border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4 py-3 text-on-surface placeholder:text-on-surface-variant/50 outline-none transition">
+                            <p class="text-[10px] text-on-surface-variant mt-2 uppercase tracking-widest">Karena hosting Vercel tidak bisa menyimpan file, masukkan link gambar (URL).</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

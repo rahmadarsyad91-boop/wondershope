@@ -37,7 +37,7 @@
                             @forelse($products as $product)
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <img src="{{ asset('storage/products/' . $product->image) }}" class="w-16 h-16 object-cover rounded-lg border border-gray-200" alt="{{ $product->name }}">
+                                        <img src="{{ filter_var($product->image, FILTER_VALIDATE_URL) ? $product->image : asset('storage/products/' . $product->image) }}" class="w-16 h-16 object-cover rounded-lg border border-gray-200" alt="{{ $product->name }}">
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">
                                         {{ $product->name }}

@@ -52,17 +52,17 @@
                 </div>
 
                 <div>
-                    <label class="block font-label-md text-sm text-on-surface mb-2">Foto Produk</label>
+                    <label class="block font-label-md text-sm text-on-surface mb-2">Link Foto Produk (URL) <span class="text-error">*</span></label>
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10">
                         @if($product->image)
-                            <div class="text-center bg-black/20 p-2 rounded-xl border border-white/10">
-                                <img src="{{ asset('storage/products/' . $product->image) }}" alt="Foto Produk" class="w-20 h-20 object-contain rounded-lg">
+                            <div class="text-center bg-black/20 p-2 rounded-xl border border-white/10 shrink-0">
+                                <img src="{{ filter_var($product->image, FILTER_VALIDATE_URL) ? $product->image : asset('storage/products/' . $product->image) }}" alt="Foto Produk" class="w-20 h-20 object-contain rounded-lg">
                             </div>
                         @endif
                         <div class="flex-1 w-full">
-                            <input type="file" name="image" 
-                                   class="w-full text-sm text-on-surface-variant file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 file:transition cursor-pointer">
-                            <p class="text-[10px] text-on-surface-variant mt-2 uppercase tracking-widest">Biarkan kosong jika tidak ingin mengubah foto. (Maks: 2MB)</p>
+                            <input type="text" name="image" value="{{ $product->image }}" required placeholder="Contoh: https://imgur.com/gambar.jpg"
+                                   class="w-full bg-surface-container-lowest border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4 py-3 text-on-surface placeholder:text-on-surface-variant/50 outline-none transition">
+                            <p class="text-[10px] text-on-surface-variant mt-2 uppercase tracking-widest">Karena hosting Vercel tidak bisa menyimpan file, masukkan link gambar (URL).</p>
                         </div>
                     </div>
                 </div>

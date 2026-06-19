@@ -21,7 +21,7 @@
         <div class="lg:col-span-7 flex flex-col gap-6">
             <div class="relative group aspect-square rounded-xl overflow-hidden glass-card flex items-center justify-center p-8 bg-black/20">
                 @if($product->image)
-                    <img class="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105 drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" id="main-image" src="{{ asset('storage/products/' . $product->image) }}" alt="{{ $product->name }}"/>
+                    <img class="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105 drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" id="main-image" src="{{ filter_var($product->image, FILTER_VALIDATE_URL) ? $product->image : asset('storage/products/' . $product->image) }}" alt="{{ $product->name }}"/>
                 @else
                     <img class="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105 drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" id="main-image" src="https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?q=80&w=1000" alt="{{ $product->name }}"/>
                 @endif
