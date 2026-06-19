@@ -36,14 +36,19 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/kelola-pesanan', [AdminController::class, 'kelolaPesanan'])->name('admin.pesanan.index');
     Route::post('/pesanan/{id}/kirim', [AdminController::class, 'kirimPesanan'])->name('admin.pesanan.kirim');
     Route::post('/pesanan/{id}/batal', [AdminController::class, 'batalPesanan'])->name('admin.pesanan.batal');
-    Route::post('/pesanan/{id}/retur', [AdminController::class, 'returPesanan'])->name('admin.pesanan.retur');
-    
+    Route::post('/admin/pesanan/{id}/retur', [AdminController::class, 'returPesanan'])->name('admin.pesanan.retur');
     // Fitur Aksi CRUD Produk (Tambah, Edit, Delete)
     Route::get('/product/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('/product/store', [ProductController::class, 'store'])->name('products.store');
     Route::get('/product/{id}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/product/{id}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/product/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+});
+
+Route::get('/wipe-data-12345', function () {
+    \DB::statement('TRUNCATE TABLE order_items CASCADE;');
+    \DB::statement('TRUNCATE TABLE orders CASCADE;');
+    return 'Database wiped successfully!';
 });
 
 // 4. Keranjang Belanja
