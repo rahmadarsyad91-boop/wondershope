@@ -16,6 +16,10 @@ use Illuminate\Support\Facades\Route;
 // 1. Katalog Toko Utama (Home)
 Route::get('/', [ProductController::class, 'index'])->name('home');
 
+Route::get('/google18e286e402b91425.html', function () {
+    return 'google-site-verification: google18e286e402b91425.html';
+});
+
 // 2. Detail Produk
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('products.show');
 
