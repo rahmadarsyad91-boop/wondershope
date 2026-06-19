@@ -44,6 +44,7 @@
                             {{ ucfirst($order->status) }}
                         </span>
                     </td>
+                    <td class="px-6 py-4">
                         <div class="flex items-center justify-center gap-2">
                             @if($order->status == 'diproses')
                                 <form action="{{ route('admin.pesanan.kirim', $order->id) }}" method="POST" onsubmit="return confirm('Kirim barang pesanan ini sekarang?')">
@@ -69,6 +70,7 @@
                                 <span class="text-on-surface-variant text-xs italic">Tidak ada aksi</span>
                             @endif
                         </div>
+                    </td>
                 </tr>
                 <!-- Rincian Item Collapse -->
                 <tr class="bg-black/10 border-b border-white/5 hidden group-hover:table-row transition-all">

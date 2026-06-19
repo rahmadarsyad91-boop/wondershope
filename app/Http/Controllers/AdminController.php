@@ -70,8 +70,11 @@ class AdminController extends Controller
      */
     public function kelolaPesanan()
     {
-        // Ambil semua data order dari yang terbaru untuk dipantau prosesnya
-        $orders = Order::with('items')->latest()->get();
+        // Ambil data order yang masih aktif (diproses / dikirim)
+        $orders = Order::with('items')
+            ->whereIn('status', ['diproses', 'dikirim'])
+            ->latest()
+            ->get();
         return view('admin.pesanan.index', compact('orders'));
     }
 
