@@ -1,4 +1,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://wondershope.vercel.app/sitemap.xml
+Sitemap: https://wondershope-y2k1.vercel.app/sitemap.xml
