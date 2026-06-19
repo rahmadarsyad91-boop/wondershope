@@ -23,11 +23,13 @@
   "env": {
     "APP_ENV": "production",
     "APP_URL": "https://wondershope-y2k1.vercel.app",
+    "APP_KEY": "base64:3lEJHib/21O3A8KjTkL5UlSJLjoGiazE8b8/aPC8iTg=",
     "APP_DEBUG": "true",
     "CACHE_STORE": "array",
     "SESSION_DRIVER": "cookie",
     "SESSION_DOMAIN": "wondershope-y2k1.vercel.app",
     "SESSION_SECURE_COOKIE": "true",
+    "SESSION_SAME_SITE": "lax",
     "SANCTUM_STATEFUL_DOMAINS": "wondershope-y2k1.vercel.app",
     "QUEUE_CONNECTION": "sync",
     "IS_VERCEL": "true",

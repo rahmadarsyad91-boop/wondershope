@@ -81,7 +81,7 @@ class CheckoutController extends Controller
             $order->telepon       = $request->telepon;
             $order->alamat_lengkap= $request->alamat_lengkap;
             $order->metode_bayar  = $request->metode_bayar;
-            $order->total_harga   = $totalHarga;
+            $order->total_harga   = (int) $totalHarga;
             $order->status        = 'diproses'; 
             $order->save();
 
@@ -96,7 +96,7 @@ class CheckoutController extends Controller
                 $orderItem->variant_name = $details['variant_name'] ?? ($details['variant'] ?? 'Standard');
                 
                 $orderItem->quantity     = $details['quantity'] ?? 1;
-                $orderItem->price        = $details['price'] ?? 0;
+                $orderItem->price        = (int) ($details['price'] ?? 0);
                 $orderItem->save();
 
                 // Kurangi stok di database
