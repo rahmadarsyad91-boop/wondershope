@@ -83,50 +83,55 @@
 <!-- CHARTS / RECENT ACTIVITY SECTION (MOCKUP) -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Chart Mockup -->
-    <div class="lg:col-span-2 glass-card rounded-2xl border border-white/10 p-6 flex flex-col">
+    <div class="lg:col-span-2 glass-card rounded-2xl border border-white/10 p-6 flex flex-col mb-6 lg:mb-0">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="font-headline-md text-xl text-on-surface">Tren Penjualan (Minggu Ini)</h2>
+            <h2 class="font-headline-md text-xl text-on-surface">Tren Penjualan (7 Hari Terakhir)</h2>
             <button class="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-label-md hover:bg-white/10 transition">Lihat Detail</button>
         </div>
-        <div class="flex-1 w-full bg-surface-container-lowest/50 rounded-xl border border-white/5 flex items-end p-4 gap-2 h-64">
-            <!-- Simulated Bar Chart -->
-            @php $heights = [30, 50, 40, 70, 60, 90, 80]; @endphp
-            @foreach($heights as $h)
-                <div class="flex-1 bg-gradient-to-t from-primary/20 to-primary/80 rounded-t-sm hover:brightness-125 transition-all cursor-pointer relative group" style="height: {{ $h }}%">
-                    <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface px-2 py-1 rounded text-xs font-bold border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Rp{{ $h }}Jt</div>
+        <div class="flex-1 w-full bg-surface-container-lowest/50 rounded-xl border border-white/5 flex items-end p-4 pb-6 gap-2 h-64 mt-4">
+            @foreach($salesChart as $day)
+                @php $height = ($day['total'] / $maxSales) * 100; @endphp
+                <div class="flex-1 bg-gradient-to-t from-primary/20 to-primary/80 rounded-t-sm hover:brightness-125 transition-all cursor-pointer relative group flex flex-col justify-end" style="height: {{ max(5, $height) }}%">
+                    <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface px-2 py-1 rounded text-xs font-bold border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">Rp {{ number_format($day['total'], 0, ',', '.') }}</div>
+                    <div class="text-[9px] text-center w-full absolute -bottom-5 text-on-surface-variant">{{ $day['date'] }}</div>
                 </div>
             @endforeach
         </div>
     </div>
 
     <!-- Recent Activity -->
-    <div class="glass-card rounded-2xl border border-white/10 p-6">
+    <div class="glass-card rounded-2xl border border-white/10 p-6 overflow-y-auto max-h-[350px]">
         <h2 class="font-headline-md text-xl text-on-surface mb-6">Aktivitas Terkini</h2>
         <div class="space-y-4">
-            <div class="flex gap-4">
-                <div class="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                <div>
-                    <p class="text-sm text-on-surface font-bold">Pesanan Baru Masuk</p>
-                    <p class="text-xs text-on-surface-variant mt-0.5">#ORD-00123 oleh Budi Santoso</p>
-                    <p class="text-[10px] text-on-surface-variant opacity-60 mt-1">5 menit yang lalu</p>
+            @forelse($recentActivities as $activity)
+                @php
+                    $colors = [
+                        'diproses' => 'bg-primary',
+                        'dikirim' => 'bg-secondary-fixed-dim',
+                        'selesai' => 'bg-green-400',
+                        'retur' => 'bg-orange-400',
+                        'batal' => 'bg-error'
+                    ];
+                    $color = $colors[$activity->status] ?? 'bg-primary';
+                    $title = [
+                        'diproses' => 'Pesanan Baru Masuk',
+                        'dikirim' => 'Pesanan Sedang Dikirim',
+                        'selesai' => 'Pesanan Selesai',
+                        'retur' => 'Pesanan Diretur',
+                        'batal' => 'Pesanan Dibatalkan'
+                    ][$activity->status] ?? 'Update Pesanan';
+                @endphp
+                <div class="flex gap-4">
+                    <div class="w-2 h-2 rounded-full {{ $color }} mt-2 shrink-0"></div>
+                    <div>
+                        <p class="text-sm text-on-surface font-bold">{{ $title }}</p>
+                        <p class="text-xs text-on-surface-variant mt-0.5">#ORD-{{ str_pad($activity->id, 5, '0', STR_PAD_LEFT) }} oleh {{ $activity->nama_penerima }}</p>
+                        <p class="text-[10px] text-on-surface-variant opacity-60 mt-1">{{ $activity->updated_at->diffForHumans() }}</p>
+                    </div>
                 </div>
-            </div>
-            <div class="flex gap-4">
-                <div class="w-2 h-2 rounded-full bg-green-400 mt-2"></div>
-                <div>
-                    <p class="text-sm text-on-surface font-bold">Pesanan Selesai</p>
-                    <p class="text-xs text-on-surface-variant mt-0.5">#ORD-00118 diterima pelanggan</p>
-                    <p class="text-[10px] text-on-surface-variant opacity-60 mt-1">1 jam yang lalu</p>
-                </div>
-            </div>
-            <div class="flex gap-4">
-                <div class="w-2 h-2 rounded-full bg-orange-400 mt-2"></div>
-                <div>
-                    <p class="text-sm text-on-surface font-bold">Permintaan Retur</p>
-                    <p class="text-xs text-on-surface-variant mt-0.5">Produk: Hyperion X-1 Pro</p>
-                    <p class="text-[10px] text-on-surface-variant opacity-60 mt-1">2 jam yang lalu</p>
-                </div>
-            </div>
+            @empty
+                <div class="text-center text-on-surface-variant text-sm py-4">Belum ada aktivitas.</div>
+            @endforelse
         </div>
     </div>
 </div>

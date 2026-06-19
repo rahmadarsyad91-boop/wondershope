@@ -24,10 +24,35 @@ class AdminController extends Controller
 
         // 3. Hitung total katalog aktif dari tabel products
         $totalProduk = Product::count();
-        $totalRetur = Order::where('status', 'retur')->count();
+        
+        // Hitung total barang diretur
+        $totalRetur = OrderItem::whereHas('order', function($query) {
+            $query->where('status', 'retur');
+        })->sum('quantity');
+        
         $totalPesanan = Order::count();
 
-        return view('admin.dashboard', compact('totalOmset', 'totalTerjual', 'totalRetur', 'totalProduk', 'totalPesanan'));
+        // 4. Aktivitas Terkini (5 pesanan terbaru berdasarkan update)
+        $recentActivities = Order::latest('updated_at')->take(5)->get();
+
+        // 5. Tren Penjualan 7 Hari Terakhir (Hanya yang selesai)
+        $salesChart = [];
+        $maxSales = 1; // Prevent division by zero
+        for ($i = 6; $i >= 0; $i--) {
+            $date = \Carbon\Carbon::now()->subDays($i)->format('Y-m-d');
+            $dailySales = Order::where('status', 'selesai')
+                               ->whereDate('updated_at', $date)
+                               ->sum('total_harga');
+            $salesChart[] = [
+                'date' => \Carbon\Carbon::now()->subDays($i)->translatedFormat('d M'),
+                'total' => $dailySales
+            ];
+            if ($dailySales > $maxSales) {
+                $maxSales = $dailySales;
+            }
+        }
+
+        return view('admin.dashboard', compact('totalOmset', 'totalTerjual', 'totalRetur', 'totalProduk', 'totalPesanan', 'recentActivities', 'salesChart', 'maxSales'));
     }
 
     /**
