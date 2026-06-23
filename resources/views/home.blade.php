@@ -23,9 +23,9 @@
             </a>
         </div>
     </div>
-    <!-- Floating Product Silhouette -->
-    <div class="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-1/3 h-full opacity-40">
-        <div class="w-full h-full bg-contain bg-center bg-no-repeat" style="background-image: url('https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?q=80&w=2070&auto=format&fit=crop')"></div>
+    <!-- Floating Logo -->
+    <div class="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 w-2/5 h-full">
+        <div class="w-full h-full bg-contain bg-center bg-no-repeat drop-shadow-[0_0_60px_rgba(172,199,255,0.3)]" style="background-image: url('https://i.imgur.com/glymSBl.png')"></div>
     </div>
 </section>
 
